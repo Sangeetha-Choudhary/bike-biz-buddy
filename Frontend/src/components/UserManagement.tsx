@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth, Store, User } from "@/contexts/AuthContext";
 import PermissionWrapper from "@/components/PermissionWrapper";
+import { apiService } from "@/services/api";
 import { 
   Search, 
   Filter, 
@@ -135,86 +136,40 @@ const UserManagement = () => {
     }
   }, [user]);
 
-  const loadUsersData = () => {
-    // Sample users data - in real app, this would come from API
-    const sampleUsers: User[] = [
-      {
-        id: '2',
-        name: 'Rajesh Patel',
-        email: 'store@mumbai.com',
-        role: 'store_admin',
-        permissions: ['manage_store', 'manage_store_users'],
-        storeId: '1',
-        storeName: 'Mumbai Central Store',
-        city: 'Mumbai',
-        department: 'Store Management'
-      },
-      {
-        id: '3',
-        name: 'Amit Sharma',
-        email: 'store@delhi.com',
-        role: 'store_admin',
-        permissions: ['manage_store', 'manage_store_users'],
-        storeId: '2',
-        storeName: 'Delhi Karol Bagh Store',
-        city: 'Delhi',
-        department: 'Store Management'
-      },
-      {
-        id: '4',
-        name: 'Karthik Reddy',
-        email: 'store@bangalore.com',
-        role: 'store_admin',
-        permissions: ['manage_store', 'manage_store_users'],
-        storeId: '3',
-        storeName: 'Bangalore Koramangala Store',
-        city: 'Bangalore',
-        department: 'Store Management'
-      },
-      {
-        id: '5',
-        name: 'Priya Sharma',
-        email: 'sales1@mumbai.com',
-        role: 'sales_executive',
-        permissions: ['manage_leads', 'view_inventory'],
-        storeId: '1',
-        storeName: 'Mumbai Central Store',
-        city: 'Mumbai',
-        department: 'Lead Generation'
-      },
-      {
-        id: '6',
-        name: 'Rohit Kumar',
-        email: 'sales2@mumbai.com',
-        role: 'sales_executive',
-        permissions: ['manage_leads', 'view_inventory'],
-        storeId: '1',
-        storeName: 'Mumbai Central Store',
-        city: 'Mumbai',
-        department: 'Sales & Fulfillment'
-      },
-      {
-        id: '7',
-        name: 'Neha Singh',
-        email: 'sales1@delhi.com',
-        role: 'sales_executive',
-        permissions: ['manage_leads', 'view_inventory'],
-        storeId: '2',
-        storeName: 'Delhi Karol Bagh Store',
-        city: 'Delhi',
-        department: 'Lead Generation'
-      }
-    ];
+  const loadUsersData = async () => {
+    try {
+      const usersData = await apiService.getUsers();
+      const formattedUsers: User[] = usersData.map((user: any) => ({
+        id: user._id,
+        name: user.username,
+        email: user.email,
+        role: user.role,
+        permissions: [], // Will be set based on role in frontend
+        storeId: user.store ? '1' : undefined,
+        storeName: user.store,
+        city: 'Mumbai', // Default city
+        department: user.role === 'store_admin' ? 'Store Management' : 
+                   user.role === 'sales_executive' ? 'Sales' :
+                   user.role === 'procurement_admin' ? 'Procurement' : 'Vehicle Acquisition'
+      }));
 
-    if (user?.role === 'global_admin') {
-      // Global admin sees all users
-      setUsers(sampleUsers);
-    } else if (user?.role === 'store_admin' && user?.storeId) {
-      // Store admin sees only users from their store
-      const storeUsers = sampleUsers.filter(u => u.storeId === user.storeId);
-      setUsers(storeUsers);
-    } else {
-      setUsers([]);
+      if (user?.role === 'global_admin') {
+        // Global admin sees all users
+        setUsers(formattedUsers);
+      } else if (user?.role === 'store_admin' && user?.storeId) {
+        // Store admin sees only users from their store
+        const storeUsers = formattedUsers.filter(u => u.storeId === user.storeId);
+        setUsers(storeUsers);
+      } else {
+        setUsers([]);
+      }
+    } catch (error) {
+      console.error('Error loading users:', error);
+      toast({
+        title: "Error Loading Users",
+        description: "Failed to load users from database.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -270,7 +225,7 @@ const UserManagement = () => {
     }
   };
 
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
     // Validate required fields based on role
     if (!userFormData.name || !userFormData.email) {
       toast({
@@ -309,46 +264,67 @@ const UserManagement = () => {
       return;
     }
 
-    // Generate appropriate permissions based on role
-    let permissions: string[] = [];
-    if (userFormData.role === 'store_admin') {
-      permissions = ['manage_store', 'manage_store_users', 'manage_leads', 'manage_inventory', 'match_engine', 'view_analytics'];
-    } else if (userFormData.role === 'sales_executive') {
-      permissions = ['manage_leads', 'view_inventory', 'match_engine', 'create_sales', 'manage_test_rides'];
-    } else if (userFormData.role === 'procurement_admin') {
-      permissions = ['manage_procurement', 'manage_city_inventory', 'create_procurement_users', 'manage_procurement_users', 'approve_vehicle_acquisition', 'assign_inventory_to_stores', 'view_procurement_analytics'];
-    } else if (userFormData.role === 'procurement_executive') {
-      permissions = ['hunt_vehicles', 'verify_vehicles', 'photograph_vehicles', 'score_vehicles', 'submit_vehicle_reports', 'record_payment_proof', 'update_vehicle_status'];
+    try {
+      // Create user data for API
+      const userData = {
+        username: userFormData.name,
+        email: userFormData.email,
+        password: 'default123', // Default password that user can change later
+        role: userFormData.role,
+        store: userFormData.role === 'procurement_admin' || userFormData.role === 'procurement_executive' ? undefined : userFormData.storeName
+      };
+
+      // Call API to create user
+      const response = await apiService.createUser(userData);
+
+      // Generate appropriate permissions based on role
+      let permissions: string[] = [];
+      if (userFormData.role === 'store_admin') {
+        permissions = ['manage_store', 'manage_store_users', 'manage_leads', 'manage_inventory', 'match_engine', 'view_analytics'];
+      } else if (userFormData.role === 'sales_executive') {
+        permissions = ['manage_leads', 'view_inventory', 'match_engine', 'create_sales', 'manage_test_rides'];
+      } else if (userFormData.role === 'procurement_admin') {
+        permissions = ['manage_procurement', 'manage_city_inventory', 'create_procurement_users', 'manage_procurement_users', 'approve_vehicle_acquisition', 'assign_inventory_to_stores', 'view_procurement_analytics'];
+      } else if (userFormData.role === 'procurement_executive') {
+        permissions = ['hunt_vehicles', 'verify_vehicles', 'photograph_vehicles', 'score_vehicles', 'submit_vehicle_reports', 'record_payment_proof', 'update_vehicle_status'];
+      }
+
+      const newUser: User = {
+        id: response._id,
+        name: userFormData.name,
+        email: userFormData.email,
+        role: userFormData.role,
+        permissions,
+        storeId: userFormData.role === 'procurement_admin' || userFormData.role === 'procurement_executive' ? undefined : userFormData.storeId,
+        storeName: userFormData.role === 'procurement_admin' || userFormData.role === 'procurement_executive' ? undefined : userFormData.storeName,
+        city: userFormData.city,
+        department: userFormData.department,
+        managedCity: userFormData.role === 'procurement_admin' ? userFormData.managedCity : undefined,
+        reportingTo: userFormData.role === 'procurement_executive' ? userFormData.reportingTo : undefined
+      };
+
+      setUsers(prev => [newUser, ...prev]);
+      setAddUserOpen(false);
+      resetUserForm();
+
+      const locationText = userFormData.role === 'procurement_admin'
+        ? userFormData.managedCity
+        : userFormData.role === 'procurement_executive'
+          ? 'procurement team'
+          : userFormData.storeName;
+
+      toast({
+        title: "User Created Successfully!",
+        description: `${newUser.name} has been added as a ${userFormData.role.replace('_', ' ')} for ${locationText}. They can login with email: ${userFormData.email} and password: default123`,
+      });
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast({
+        title: "Error Creating User",
+        description: error instanceof Error ? error.message : "Failed to create user. Please try again.",
+        variant: "destructive",
+      });
     }
-
-    const newUser: User = {
-      id: Date.now().toString(),
-      name: userFormData.name,
-      email: userFormData.email,
-      role: userFormData.role,
-      permissions,
-      storeId: userFormData.role === 'procurement_admin' || userFormData.role === 'procurement_executive' ? undefined : userFormData.storeId,
-      storeName: userFormData.role === 'procurement_admin' || userFormData.role === 'procurement_executive' ? undefined : userFormData.storeName,
-      city: userFormData.city,
-      department: userFormData.department,
-      managedCity: userFormData.role === 'procurement_admin' ? userFormData.managedCity : undefined,
-      reportingTo: userFormData.role === 'procurement_executive' ? userFormData.reportingTo : undefined
-    };
-
-    setUsers(prev => [newUser, ...prev]);
-    setAddUserOpen(false);
-    resetUserForm();
-
-    const locationText = userFormData.role === 'procurement_admin'
-      ? userFormData.managedCity
-      : userFormData.role === 'procurement_executive'
-        ? 'procurement team'
-        : userFormData.storeName;
-
-    toast({
-      title: "User Created Successfully!",
-      description: `${newUser.name} has been added as a ${userFormData.role.replace('_', ' ')} for ${locationText}.`,
-    });
   };
 
   const handleAddStoreWithAdmin = () => {

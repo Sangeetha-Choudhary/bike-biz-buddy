@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const employeeSchema = new mongoose.Schema(
+const userSchema = new mongoose.Schema(
   {
     username: {
       type: String,
@@ -17,7 +17,7 @@ const employeeSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, 'Password is required'],
-      default: 'employee123', // <-- default password
+      // default: 'employee123', // <-- default password
     },
     role: {
       type: String,
@@ -31,5 +31,5 @@ const employeeSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-const Employee = mongoose.model('Employee', employeeSchema);
-export default Employee;
+const User = mongoose.model('User', userSchema);
+export default User;

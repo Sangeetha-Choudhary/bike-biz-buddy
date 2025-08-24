@@ -109,6 +109,12 @@ class ApiService {
     });
   }
 
+  async getUsers(): Promise<any[]> {
+    return this.request<any[]>('/api/users', {
+      method: 'GET',
+    });
+  }
+
   // Helper method to get auth token
   getToken(): string | null {
     return localStorage.getItem('bikebiz_token');
