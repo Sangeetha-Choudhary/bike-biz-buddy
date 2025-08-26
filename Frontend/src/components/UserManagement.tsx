@@ -43,6 +43,7 @@ import {
 interface UserFormData {
   name: string;
   email: string;
+ 
   role: 'store_admin' | 'sales_executive' | 'procurement_admin' | 'procurement_executive';
   storeId: string;
   storeName: string;
@@ -82,6 +83,7 @@ const UserManagement = () => {
   const [userFormData, setUserFormData] = useState<UserFormData>({
     name: "",
     email: "",
+   
     role: "sales_executive",
     storeId: "",
     storeName: "",
@@ -135,7 +137,12 @@ const UserManagement = () => {
       loadData();
     }
   }, [user]);
-
+// _id: user._id,
+//       username: user.username,
+//       email: user.email,
+//       role: user.role,
+//       redirectUrl: roleBasedRedirect[user.role] || "/dashboard",
+//       token: generateToken(user._id),
   const loadUsersData = async () => {
     try {
       const usersData = await apiService.getUsers();
@@ -383,6 +390,7 @@ const UserManagement = () => {
     setUserFormData({
       name: "",
       email: "",
+     
       role: "sales_executive",
       storeId: "",
       storeName: "",
@@ -507,6 +515,7 @@ const UserManagement = () => {
                     setUserFormData({
                       name: userData.name,
                       email: userData.email,
+                   
                       role: userData.role as any,
                       storeId: userData.storeId || '',
                       storeName: userData.storeName || '',
@@ -686,6 +695,28 @@ const UserManagement = () => {
                 />
               </div>
             </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="userPhone">Phone/Contact Number</Label>
+                  <Input
+                    id="userPhone"
+                    type="tel"
+                    value={userFormData.phone}
+                    onChange={(e) => setUserFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="Enter phone/contact number"
+                  />
+                </div>
+                {/* <div className="space-y-2"> */}
+                  {/* <Label htmlFor="userPassword">Password</Label>
+                  <Input
+                    id="userPassword"
+                    type="password"
+                    value={userFormData.password || ''}
+                    onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="Enter password"
+                  /> */}
+                {/* </div> */}
+              </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -772,29 +803,6 @@ const UserManagement = () => {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="userDepartment">Department</Label>
-              <select
-                id="userDepartment"
-                value={userFormData.department}
-                onChange={(e) => setUserFormData(prev => ({ ...prev, department: e.target.value }))}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {userFormData.role === 'store_admin' ? (
-                  <option value="Store Management">Store Management</option>
-                ) : userFormData.role === 'procurement_admin' ? (
-                  <option value="Procurement Administration">Procurement Administration</option>
-                ) : userFormData.role === 'procurement_executive' ? (
-                  <option value="Vehicle Procurement">Vehicle Procurement</option>
-                ) : (
-                  <>
-                    <option value="Lead Generation">Lead Generation</option>
-                    <option value="Sales & Fulfillment">Sales & Fulfillment</option>
-                    <option value="Customer Service">Customer Service</option>
-                  </>
-                )}
-              </select>
-            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddUserOpen(false)}>

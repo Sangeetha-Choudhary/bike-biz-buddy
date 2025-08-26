@@ -20,6 +20,7 @@ export interface Store {
 export interface User {
   id: string;
   email: string;
+
   name: string;
   role: UserRole;
   avatar?: string;
@@ -140,11 +141,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       const response = await apiService.login({ email, password });
-      
+      // _id: user._id,
+      // username: user.username,
+      // email: user.email,
+      // role: user.role,
+      // redirectUrl: roleBasedRedirect[user.role] || "/dashboard",
+      // token: generateToken(user._id),
       // Create user object with permissions based on role
       const userWithPermissions: User = {
         id: response._id,
         email: response.email,
+        
         name: response.username,
         role: response.role as UserRole,
         permissions: ROLE_PERMISSIONS[response.role as UserRole] || [],

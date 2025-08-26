@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, 'Password is required'],
-      // default: 'employee123', // <-- default password
+      default: 'employee123', 
     },
     role: {
       type: String,
@@ -26,6 +26,9 @@ const userSchema = new mongoose.Schema(
     store: {
       type: String,
       enum: ['Mumbai Central Store', 'Delhi Karol Bagh Store', 'Bangalore Koramangala Store'],
+    },
+    phone: {
+      type: String,
     },
   },
   { timestamps: true },

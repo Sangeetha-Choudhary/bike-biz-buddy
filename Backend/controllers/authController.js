@@ -7,8 +7,10 @@ export const loginUser = async (req, res) => {
 
   try {
     const user = await User.findOne({ email });
+    console.log(user);
 
     if (!user) {
+      
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
@@ -82,6 +84,7 @@ export const createUser = async (req, res) => {
 export const getUsers = async (req, res) => {
   try {
     const users = await User.find().select('-password');
+    // console.log(users);
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
