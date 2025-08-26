@@ -870,12 +870,12 @@ Your BikeWale Team`
           <h1 className="text-xl lg:text-2xl font-bold text-foreground">Match Engine</h1>
           <p className="text-sm lg:text-base text-muted-foreground hidden lg:block">Find perfect vehicles for your leads</p>
         </div>
-        <div className="flex gap-2">
+        {/* <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setFilterOpen(!filterOpen)} className="flex-1 lg:flex-none">
             <Settings className="w-4 h-4 lg:mr-2" />
             <span className="hidden lg:inline">Settings</span>
           </Button>
-        </div>
+        </div> */}
       </div>
 
       {/* Lead Selection */}

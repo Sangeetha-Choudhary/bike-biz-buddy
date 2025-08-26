@@ -27,7 +27,8 @@ import {
   Building,
   UserCog,
   Truck,
-  CheckSquare
+  CheckSquare,
+  Lock
 } from "lucide-react";
 
 interface NavigationProps {
@@ -86,13 +87,13 @@ const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
       permission: 'manage_store_users',
       adminOnly: false
     },
-    {
-      id: 'analytics',
-      label: 'Analytics',
-      icon: BarChart3,
-      permission: 'view_analytics',
-      adminOnly: false
-    },
+    // {
+    //   id: 'analytics',
+    //   label: 'Analytics',
+    //   icon: BarChart3,
+    //   permission: 'view_analytics',
+    //   adminOnly: false
+    // },
     {
       id: 'procurement',
       label: 'Procurement',
@@ -107,13 +108,13 @@ const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
       permission: 'verify_vehicles',
       adminOnly: false
     },
-    {
-      id: 'admin',
-      label: 'Admin Panel',
-      icon: Shield,
-      permission: 'all',
-      adminOnly: true
-    }
+    // {
+    //   id: 'admin',
+    //   label: 'Admin Panel',
+    //   icon: Shield,
+    //   permission: 'all',
+    //   adminOnly: true
+    // }
   ];
 
   const visibleItems = navigationItems.filter(item => {
@@ -180,7 +181,7 @@ const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
           )}
         </div>
 
-        <div>
+        {/* <div>
           <h4 className="font-medium mb-2">Permissions</h4>
           <div className="flex flex-wrap gap-1">
             {user.permissions.includes('all') ? (
@@ -196,20 +197,26 @@ const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
               ))
             )}
           </div>
-        </div>
+        </div> */}
       </div>
 
       <Separator />
 
       <div className="space-y-2">
-        <Button variant="outline" className="w-full justify-start">
+        {/* <Button variant="outline" className="w-full justify-start">
           <Settings className="w-4 h-4 mr-2" />
           Account Settings
+        </Button> */}
+        <Button variant="outline" className="w-full justify-start"
+        // onClick={able to reset the password , open diagloue to reset the pwd}
+        >
+          <Lock className="w-4 h-4 mr-2" />
+          Password Reset
         </Button>
-        <Button variant="outline" className="w-full justify-start">
+        {/* <Button variant="outline" className="w-full justify-start">
           <Bell className="w-4 h-4 mr-2" />
           Notifications
-        </Button>
+        </Button> */}
         <Button 
           variant="destructive" 
           className="w-full justify-start"

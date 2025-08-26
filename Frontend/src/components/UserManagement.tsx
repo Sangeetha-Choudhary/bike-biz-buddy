@@ -647,7 +647,7 @@ const UserManagement = () => {
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button
+              {/* <Button
                 size="sm"
                 variant="outline"
                 className="flex-1"
@@ -658,7 +658,7 @@ const UserManagement = () => {
               >
                 <Eye className="w-3 h-3 mr-1" />
                 View Details
-              </Button>
+              </Button> */}
               <PermissionWrapper permission="all">
                 <Button
                   size="sm"

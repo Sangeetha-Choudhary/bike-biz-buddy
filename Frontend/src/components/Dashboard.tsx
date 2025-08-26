@@ -60,15 +60,15 @@ interface Lead {
   priority?: 'high' | 'medium' | 'low';
 }
 
-interface Notification {
-  id: number;
-  type: 'follow_up' | 'test_ride' | 'payment' | 'delivery' | 'inquiry';
-  title: string;
-  message: string;
-  time: string;
-  urgent: boolean;
-  leadId?: number;
-}
+// interface Notification {
+//   id: number;
+//   type: 'follow_up' | 'test_ride' | 'payment' | 'delivery' | 'inquiry';
+//   title: string;
+//   message: string;
+//   time: string;
+//   urgent: boolean;
+//   leadId?: number;
+// }
 
 interface Task {
   id: number;
@@ -127,10 +127,10 @@ const Dashboard = () => {
   ];
 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  // const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [quickActionOpen, setQuickActionOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
+  // const [refreshing, setRefreshing] = useState(false);
   const [quickActionData, setQuickActionData] = useState({
     leadName: "",
     phone: "",
@@ -246,42 +246,42 @@ const Dashboard = () => {
     }
   ];
 
-  const notifications: Notification[] = [
-    {
-      id: 1,
-      type: "follow_up",
-      title: "Follow-up Due",
-      message: "Call Rajesh Kumar about Honda Activa pricing",
-      time: "2:00 PM",
-      urgent: true,
-      leadId: 1
-    },
-    {
-      id: 2,
-      type: "test_ride",
-      title: "Test Ride Scheduled",
-      message: "Priya Sharma - TVS Jupiter at 4:30 PM",
-      time: "4:30 PM",
-      urgent: false,
-      leadId: 2
-    },
-    {
-      id: 3,
-      type: "inquiry",
-      title: "New Lead",
-      message: "Website inquiry for Royal Enfield Classic 350",
-      time: "1 hour ago",
-      urgent: false
-    },
-    {
-      id: 4,
-      type: "payment",
-      title: "Payment Reminder",
-      message: "Follow up with Deepak Singh for pending payment",
-      time: "Tomorrow",
-      urgent: true
-    }
-  ];
+  // const notifications: Notification[] = [
+  //   {
+  //     id: 1,
+  //     type: "follow_up",
+  //     title: "Follow-up Due",
+  //     message: "Call Rajesh Kumar about Honda Activa pricing",
+  //     time: "2:00 PM",
+  //     urgent: true,
+  //     leadId: 1
+  //   },
+  //   {
+  //     id: 2,
+  //     type: "test_ride",
+  //     title: "Test Ride Scheduled",
+  //     message: "Priya Sharma - TVS Jupiter at 4:30 PM",
+  //     time: "4:30 PM",
+  //     urgent: false,
+  //     leadId: 2
+  //   },
+  //   {
+  //     id: 3,
+  //     type: "inquiry",
+  //     title: "New Lead",
+  //     message: "Website inquiry for Royal Enfield Classic 350",
+  //     time: "1 hour ago",
+  //     urgent: false
+  //   },
+  //   {
+  //     id: 4,
+  //     type: "payment",
+  //     title: "Payment Reminder",
+  //     message: "Follow up with Deepak Singh for pending payment",
+  //     time: "Tomorrow",
+  //     urgent: true
+  //   }
+  // ];
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -301,27 +301,27 @@ const Dashboard = () => {
     return colors[priority as keyof typeof colors] || colors.low;
   };
 
-  const getNotificationIcon = (type: string) => {
-    const icons = {
-      follow_up: Phone,
-      test_ride: Calendar,
-      payment: IndianRupee,
-      delivery: Package,
-      inquiry: UserPlus
-    };
-    return icons[type as keyof typeof icons] || Bell;
-  };
+  // const getNotificationIcon = (type: string) => {
+  //   const icons = {
+  //     follow_up: Phone,
+  //     test_ride: Calendar,
+  //     payment: IndianRupee,
+  //     delivery: Package,
+  //     inquiry: UserPlus
+  //   };
+  //   return icons[type as keyof typeof icons] || Bell;
+  // };
 
-  const handleRefreshData = async () => {
-    setRefreshing(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setRefreshing(false);
-    toast({
-      title: "Data Refreshed",
-      description: "Dashboard data has been updated with latest information.",
-    });
-  };
+  // const handleRefreshData = async () => {
+  //   setRefreshing(true);
+  //   // Simulate API call
+  //   await new Promise(resolve => setTimeout(resolve, 2000));
+  //   setRefreshing(false);
+  //   toast({
+  //     title: "Data Refreshed",
+  //     description: "Dashboard data has been updated with latest information.",
+  //   });
+  // };
 
   const handleCallLead = (lead: Lead) => {
     toast({
@@ -432,26 +432,26 @@ const Dashboard = () => {
     });
   };
 
-  const handleNotificationAction = (notification: Notification) => {
-    if (notification.leadId) {
-      const lead = recentLeads.find(l => l.id === notification.leadId);
-      if (lead) {
-        if (notification.type === 'follow_up') {
-          handleCallLead(lead);
-        } else if (notification.type === 'test_ride') {
-          toast({
-            title: "Test Ride",
-            description: `Managing test ride for ${lead.name}`,
-          });
-        }
-      }
-    }
+  // const handleNotificationAction = (notification: Notification) => {
+  //   if (notification.leadId) {
+  //     const lead = recentLeads.find(l => l.id === notification.leadId);
+  //     if (lead) {
+  //       if (notification.type === 'follow_up') {
+  //         handleCallLead(lead);
+  //       } else if (notification.type === 'test_ride') {
+  //         toast({
+  //           title: "Test Ride",
+  //           description: `Managing test ride for ${lead.name}`,
+  //         });
+  //       }
+  //     }
+  //   }
     
-    toast({
-      title: "Notification Handled",
-      description: notification.message,
-    });
-  };
+  //   toast({
+  //     title: "Notification Handled",
+  //     description: notification.message,
+  //   });
+  // };
 
   const AddTaskDialog = () => (
     <>
@@ -817,93 +817,93 @@ const Dashboard = () => {
     </>
   );
 
-  const NotificationsDialog = () => (
-    <>
-      {isMobile ? (
-        <Drawer open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-          <DrawerContent>
-            <DrawerHeader>
-              <DrawerTitle>Notifications</DrawerTitle>
-              <DrawerDescription>
-                Recent updates and reminders
-              </DrawerDescription>
-            </DrawerHeader>
-            <div className="px-4">
-              <ScrollArea className="max-h-[60vh]">
-                <div className="space-y-3">
-                  {notifications.map((notification) => {
-                    const Icon = getNotificationIcon(notification.type);
-                    return (
-                      <Card 
-                        key={notification.id} 
-                        className={`cursor-pointer transition-all ${notification.urgent ? 'border-red-200 bg-red-50' : ''}`}
-                        onClick={() => handleNotificationAction(notification)}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <div className={`p-2 rounded-lg ${notification.urgent ? 'bg-red-100' : 'bg-muted'}`}>
-                              <Icon className={`w-4 h-4 ${notification.urgent ? 'text-red-600' : 'text-muted-foreground'}`} />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
-                                <h4 className="font-semibold text-sm">{notification.title}</h4>
-                                <span className="text-xs text-muted-foreground">{notification.time}</span>
-                              </div>
-                              <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            </div>
-          </DrawerContent>
-        </Drawer>
-      ) : (
-        <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Notifications</DialogTitle>
-              <DialogDescription>
-                Recent updates and reminders
-              </DialogDescription>
-            </DialogHeader>
-            <ScrollArea className="max-h-[60vh]">
-              <div className="space-y-3">
-                {notifications.map((notification) => {
-                  const Icon = getNotificationIcon(notification.type);
-                  return (
-                    <Card 
-                      key={notification.id} 
-                      className={`cursor-pointer transition-all ${notification.urgent ? 'border-red-200 bg-red-50' : ''}`}
-                      onClick={() => handleNotificationAction(notification)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          <div className={`p-2 rounded-lg ${notification.urgent ? 'bg-red-100' : 'bg-muted'}`}>
-                            <Icon className={`w-4 h-4 ${notification.urgent ? 'text-red-600' : 'text-muted-foreground'}`} />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <h4 className="font-semibold text-sm">{notification.title}</h4>
-                              <span className="text-xs text-muted-foreground">{notification.time}</span>
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </ScrollArea>
-          </DialogContent>
-        </Dialog>
-      )}
-    </>
-  );
+  // const NotificationsDialog = () => (
+  //   <>
+  //     {isMobile ? (
+  //       <Drawer open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+  //         <DrawerContent>
+  //           <DrawerHeader>
+  //             <DrawerTitle>Notifications</DrawerTitle>
+  //             <DrawerDescription>
+  //               Recent updates and reminders
+  //             </DrawerDescription>
+  //           </DrawerHeader>
+  //           <div className="px-4">
+  //             <ScrollArea className="max-h-[60vh]">
+  //               <div className="space-y-3">
+  //                 {notifications.map((notification) => {
+  //                   const Icon = getNotificationIcon(notification.type);
+  //                   return (
+  //                     <Card 
+  //                       key={notification.id} 
+  //                       className={`cursor-pointer transition-all ${notification.urgent ? 'border-red-200 bg-red-50' : ''}`}
+  //                       onClick={() => handleNotificationAction(notification)}
+  //                     >
+  //                       <CardContent className="p-4">
+  //                         <div className="flex items-start gap-3">
+  //                           <div className={`p-2 rounded-lg ${notification.urgent ? 'bg-red-100' : 'bg-muted'}`}>
+  //                             <Icon className={`w-4 h-4 ${notification.urgent ? 'text-red-600' : 'text-muted-foreground'}`} />
+  //                           </div>
+  //                           <div className="flex-1">
+  //                             <div className="flex items-center justify-between">
+  //                               <h4 className="font-semibold text-sm">{notification.title}</h4>
+  //                               <span className="text-xs text-muted-foreground">{notification.time}</span>
+  //                             </div>
+  //                             <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
+  //                           </div>
+  //                         </div>
+  //                       </CardContent>
+  //                     </Card>
+  //                   );
+  //                 })}
+  //               </div>
+  //             </ScrollArea>
+  //           </div>
+  //         </DrawerContent>
+  //       </Drawer>
+  //     ) : (
+  //       <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+  //         <DialogContent className="max-w-2xl">
+  //           <DialogHeader>
+  //             <DialogTitle>Notifications</DialogTitle>
+  //             <DialogDescription>
+  //               Recent updates and reminders
+  //             </DialogDescription>
+  //           </DialogHeader>
+  //           <ScrollArea className="max-h-[60vh]">
+  //             <div className="space-y-3">
+  //               {notifications.map((notification) => {
+  //                 const Icon = getNotificationIcon(notification.type);
+  //                 return (
+  //                   <Card 
+  //                     key={notification.id} 
+  //                     className={`cursor-pointer transition-all ${notification.urgent ? 'border-red-200 bg-red-50' : ''}`}
+  //                     onClick={() => handleNotificationAction(notification)}
+  //                   >
+  //                     <CardContent className="p-4">
+  //                       <div className="flex items-start gap-3">
+  //                         <div className={`p-2 rounded-lg ${notification.urgent ? 'bg-red-100' : 'bg-muted'}`}>
+  //                           <Icon className={`w-4 h-4 ${notification.urgent ? 'text-red-600' : 'text-muted-foreground'}`} />
+  //                         </div>
+  //                         <div className="flex-1">
+  //                           <div className="flex items-center justify-between">
+  //                             <h4 className="font-semibold text-sm">{notification.title}</h4>
+  //                             <span className="text-xs text-muted-foreground">{notification.time}</span>
+  //                           </div>
+  //                           <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
+  //                         </div>
+  //                       </div>
+  //                     </CardContent>
+  //                   </Card>
+  //                 );
+  //               })}
+  //             </div>
+  //           </ScrollArea>
+  //         </DialogContent>
+  //       </Dialog>
+  //     )}
+  //   </>
+  // );
 
   return (
     <div className="min-h-screen bg-background p-3 lg:p-4 pb-20 lg:pb-6 space-y-4 lg:space-y-6">
@@ -914,7 +914,7 @@ const Dashboard = () => {
           <p className="text-sm lg:text-base text-muted-foreground hidden lg:block">Welcome back! Here's your business overview</p>
         </div>
         <div className="flex gap-2">
-          <Button
+          {/* <Button
             variant="outline"
             size="sm"
             onClick={() => setNotificationsOpen(true)}
@@ -927,8 +927,8 @@ const Dashboard = () => {
                 {notifications.filter(n => n.urgent).length}
               </Badge>
             )}
-          </Button>
-          <Button
+          </Button> */}
+          {/* <Button
             variant="outline"
             size="sm"
             onClick={handleRefreshData}
@@ -937,7 +937,7 @@ const Dashboard = () => {
           >
             <RefreshCw className={`w-4 h-4 lg:mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             <span className="hidden lg:inline">{refreshing ? 'Updating...' : 'Refresh'}</span>
-          </Button>
+          </Button> */}
           <Button
             size="sm"
             onClick={() => setQuickActionOpen(true)}
@@ -1323,7 +1323,7 @@ const Dashboard = () => {
       {/* Dialogs */}
       <AddTaskDialog />
       <QuickActionDialog />
-      <NotificationsDialog />
+      {/* <NotificationsDialog /> */}
     </div>
   );
 };
