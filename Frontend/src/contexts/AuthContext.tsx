@@ -14,6 +14,7 @@ export interface Store {
   state: string;
   manager?: string;
   createdDate: string;
+  googlemaplink: string;
   status: 'active' | 'inactive';
 }
 

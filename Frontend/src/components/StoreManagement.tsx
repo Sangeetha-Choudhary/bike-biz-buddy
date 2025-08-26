@@ -174,6 +174,7 @@ const StoreManagement = () => {
       address: storeFormData.address,
       phone: storeFormData.phone,
       email: storeFormData.storeadminemail,
+      googlemaplink: storeFormData.googlemaplink,
       city: storeFormData.city,
       state: storeFormData.state,
       manager: storeFormData.storeadminname,
@@ -351,7 +352,7 @@ const StoreManagement = () => {
                   setStoreFormData({
                     storename: store.name,
                     address: store.address || '',
-                    googlemaplink: store.googleMapLink || '',
+                    googlemaplink: store.googlemaplink || '',
                     city: store.city,
                     latitude: 0,
                     longitude: 0,
