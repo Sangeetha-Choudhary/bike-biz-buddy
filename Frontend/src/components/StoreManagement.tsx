@@ -42,14 +42,19 @@ import {
 } from "lucide-react";
 
 interface StoreFormData {
-  name: string;
-  location: string;
+  storename: string;
   address: string;
-  phone: string;
-  email: string;
+  googlemaplink: string;
   city: string;
+  latitude: number;
+  longitude: number;
+  phone: string;
+  pancard: string;
   state: string;
-  manager: string;
+  gstnumber: string;
+  storeadminname: string;
+  storeadminemail: string;
+  whatsapp: string;
 }
 
 interface UserFormData {
@@ -72,14 +77,19 @@ const StoreManagement = () => {
   const [currentTab, setCurrentTab] = useState("overview");
   
   const [storeFormData, setStoreFormData] = useState<StoreFormData>({
-    name: "",
-    location: "",
+    storename: "",
     address: "",
-    phone: "",
-    email: "",
+    googlemaplink: "",
     city: "",
+    latitude: 0,
+    longitude: 0,
+    phone: "",
+    pancard: "",
     state: "",
-    manager: ""
+    gstnumber: "",
+    storeadminname: "",
+    storeadminemail: "",
+    whatsapp: "",
   });
 
   const [userFormData, setUserFormData] = useState<UserFormData>({
@@ -140,6 +150,7 @@ const StoreManagement = () => {
       }
     ];
 
+
     if (user?.role === 'store_admin') {
       // Filter users for current store
       const currentStoreUsers = sampleUsers.filter(u => u.storeId === user.storeId);
@@ -150,39 +161,45 @@ const StoreManagement = () => {
     }
   };
 
-  const handleAddStore = () => {
-    if (!storeFormData.name || !storeFormData.city || !storeFormData.location) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
+  const handleAddStoreWithAdmin = () => {
+    if (!storeFormData.storename || !storeFormData.city || !storeFormData.storeadminname || !storeFormData.storeadminemail) {
+      toast({ title: "Missing Information", description: "Please fill in all required fields.", variant: "destructive" });
       return;
     }
-
+    const storeId = Date.now().toString();
     const newStore: Store = {
-      id: Date.now().toString(),
-      name: storeFormData.name,
-      location: storeFormData.location,
+      id: storeId,
+      name: storeFormData.storename,
+      location: storeFormData.city,
       address: storeFormData.address,
       phone: storeFormData.phone,
-      email: storeFormData.email,
+      email: storeFormData.storeadminemail,
       city: storeFormData.city,
       state: storeFormData.state,
-      manager: storeFormData.manager,
-      createdDate: new Date().toISOString().split('T')[0],
-      status: 'active'
+      manager: storeFormData.storeadminname,
+      createdDate: new Date().toISOString().split("T")[0],
+      status: "active",
     };
-
+    const newStoreAdmin: User = {
+      id: (Date.now() + 1).toString(),
+      name: storeFormData.storeadminname,
+      email: storeFormData.storeadminemail,
+      role: "store_admin",
+      permissions: ["manage_store","manage_store_users","manage_leads","manage_inventory","match_engine","view_analytics"],
+      storeId,
+      storeName: storeFormData.storename,
+      city: storeFormData.city,
+      department: "Store Management",
+      managedStore: newStore,
+    };
     setStores(prev => [newStore, ...prev]);
+    setStoreUsers(prev => [newStoreAdmin, ...prev]);
     setAddStoreOpen(false);
     resetStoreForm();
-
-    toast({
-      title: "Store Created Successfully!",
-      description: `${newStore.name} has been added to the system.`,
-    });
+    toast({ title: "Store & Admin Created Successfully!", description: `${newStore.name} has been created with ${newStoreAdmin.name} as Store Admin.` });
   };
+
+  // Deprecated simple add; unified into handleAddStoreWithAdmin
 
   const handleAddUser = () => {
     if (!userFormData.name || !userFormData.email) {
@@ -218,14 +235,19 @@ const StoreManagement = () => {
 
   const resetStoreForm = () => {
     setStoreFormData({
-      name: "",
-      location: "",
+      storename: "",
       address: "",
-      phone: "",
-      email: "",
+      googlemaplink: "",
       city: "",
+      latitude: 0,
+      longitude: 0,
+      phone: "",
+      pancard: "",
       state: "",
-      manager: ""
+      gstnumber: "",
+      storeadminname: "",
+      storeadminemail: "",
+      whatsapp: "",
     });
   };
 
@@ -327,14 +349,19 @@ const StoreManagement = () => {
                 onClick={() => {
                   setSelectedStore(store);
                   setStoreFormData({
-                    name: store.name,
-                    location: store.location,
+                    storename: store.name,
                     address: store.address || '',
-                    phone: store.phone || '',
-                    email: store.email || '',
+                    googlemaplink: store.googleMapLink || '',
                     city: store.city,
+                    latitude: 0,
+                    longitude: 0,
+                    phone: store.phone || '',
+                    pancard: '',
                     state: store.state,
-                    manager: store.manager || ''
+                    gstnumber: '',
+                    storeadminname: store.manager || '',
+                    storeadminemail: '',
+                    whatsapp: '',
                   });
                   setEditStoreOpen(true);
                 }}
@@ -748,108 +775,237 @@ const StoreManagement = () => {
       {/* Store Details Dialog */}
       <StoreDetailsDialog />
 
-      {/* Add Store Dialog */}
+      {/* Add Store & Admin Dialog */}
       <Dialog open={addStoreOpen} onOpenChange={setAddStoreOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add New Store</DialogTitle>
+            <DialogTitle>Create Store & Assign Admin</DialogTitle>
             <DialogDescription>
-              Create a new store location with all necessary details.
+              Create a new store location and assign a Store Admin to manage it.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg">Store Information</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="storename">Store Name*</Label>
+                  <Input
+                    id="storename"
+                    type="text"
+                    value={storeFormData.storename}
+                    onChange={e => setStoreFormData(prev => ({ ...prev, storename: e.target.value }))}
+                    placeholder="Store Name"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city">City*</Label>
+                  <Input
+                    id="city"
+                    type="text"
+                    value={storeFormData.city}
+                    onChange={(e) => setStoreFormData(prev => ({ ...prev, city: e.target.value }))}
+                    placeholder="Mumbai"
+                    required
+                  />
+                </div>
+              </div>
+              
               <div className="space-y-2">
-                <Label htmlFor="storeName">Store Name *</Label>
+                <Label htmlFor="address">Address</Label>
                 <Input
-                  id="storeName"
-                  value={storeFormData.name}
-                  onChange={(e) => setStoreFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Mumbai Central Store"
+                  id="address"
+                  value={storeFormData.address}
+                  onChange={(e) => setStoreFormData(prev => ({ ...prev, address: e.target.value }))}
+                  placeholder="123 Dr. D.N. Road, Mumbai Central, Mumbai - 400008"
+                  required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="location">Location *</Label>
+                <Label htmlFor="googlemaplink">Google Map Link</Label>
                 <Input
-                  id="location"
-                  value={storeFormData.location}
-                  onChange={(e) => setStoreFormData(prev => ({ ...prev, location: e.target.value }))}
-                  placeholder="Mumbai Central"
+                  id="googlemaplink"
+                  type="url"
+                  value={storeFormData.googlemaplink}
+                  onChange={(e) => setStoreFormData(prev => ({ ...prev, googlemaplink: e.target.value }))}
+                  placeholder="https://maps.app.goo.gl/..."
+                  pattern="https?://(maps\.google\.com|goo\.gl|maps\.app\.goo\.gl).*"
                 />
               </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <Textarea
-                id="address"
-                value={storeFormData.address}
-                onChange={(e) => setStoreFormData(prev => ({ ...prev, address: e.target.value }))}
-                placeholder="123 Dr. D.N. Road, Mumbai Central, Mumbai - 400008"
-                rows={2}
-              />
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="city">City *</Label>
-                <Input
-                  id="city"
-                  value={storeFormData.city}
-                  onChange={(e) => setStoreFormData(prev => ({ ...prev, city: e.target.value }))}
-                  placeholder="Mumbai"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="latitude">Latitude*</Label>
+                  <Input
+                    id="latitude"
+                    type="number"
+                    min="-90"
+                    max="90"
+                    step="any"
+                    value={storeFormData.latitude}
+                    onChange={(e) =>
+                      setStoreFormData(prev => ({
+                        ...prev,
+                        latitude: Number.isNaN(e.target.valueAsNumber) ? 0 : e.target.valueAsNumber
+                      }))
+                    }
+                    placeholder="Enter latitude (e.g., 12.9716)"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="longitude">Longitude*</Label>
+                  <Input
+                    id="longitude"
+                    type="number"
+                    min="-180"
+                    max="180"
+                    step="any"
+                    value={storeFormData.longitude}
+                    onChange={(e) =>
+                      setStoreFormData(prev => ({
+                        ...prev,
+                        longitude: Number.isNaN(e.target.valueAsNumber) ? 0 : e.target.valueAsNumber
+                      }))
+                    }
+                    placeholder="Enter longitude (e.g., 77.5946)"
+                    required
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="state">State</Label>
-                <Input
-                  id="state"
-                  value={storeFormData.state}
-                  onChange={(e) => setStoreFormData(prev => ({ ...prev, state: e.target.value }))}
-                  placeholder="Maharashtra"
-                />
-              </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  value={storeFormData.phone}
-                  onChange={(e) => setStoreFormData(prev => ({ ...prev, phone: e.target.value }))}
-                  placeholder="+91 22 2123 4567"
-                />
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="state">State</Label>
+                  <Input
+                    id="state"
+                    value={storeFormData.state}
+                    onChange={(e) => setStoreFormData(prev => ({ ...prev, state: e.target.value }))}
+                    placeholder="Maharashtra"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone (India)</Label>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-input bg-muted text-sm text-muted-foreground">
+                      +91
+                    </span>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      inputMode="numeric"
+                      className="rounded-l-none"
+                      placeholder="9876543210"
+                      maxLength={10}
+                      value={storeFormData.phone}
+                      onChange={(e) =>
+                        setStoreFormData(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, "").slice(0, 10) }))
+                      }
+                      pattern="^[6-9]\d{9}$"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="whatsapp">Whatsapp Number (India)</Label>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-input bg-muted text-sm text-muted-foreground">
+                      +91
+                    </span>
+                    <Input
+                      id="whatsapp"
+                      type="tel"
+                      inputMode="numeric"
+                      className="rounded-l-none"
+                      placeholder="9876543210"
+                      maxLength={10}
+                      value={storeFormData.whatsapp}
+                      onChange={(e) =>
+                        setStoreFormData(prev => ({ ...prev, whatsapp: e.target.value.replace(/\D/g, "").slice(0, 10) }))
+                      }
+                      pattern="^[6-9]\d{9}$"
+                      required
+                    />
+                  </div>
+                </div>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="storeadminemail">Store Email</Label>
                 <Input
-                  id="email"
+                  id="storeadminemail"
                   type="email"
-                  value={storeFormData.email}
-                  onChange={(e) => setStoreFormData(prev => ({ ...prev, email: e.target.value }))}
+                  value={storeFormData.storeadminemail}
+                  onChange={(e) => setStoreFormData(prev => ({ ...prev, storeadminemail: e.target.value }))}
                   placeholder="mumbai@bikebiz.com"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="manager">Store Manager</Label>
-              <Input
-                id="manager"
-                value={storeFormData.manager}
-                onChange={(e) => setStoreFormData(prev => ({ ...prev, manager: e.target.value }))}
-                placeholder="Manager Name"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="gstnumber">GST Number</Label>
+                <Input
+                  id="gstnumber"
+                  type="text"
+                  maxLength={15}
+                  value={storeFormData.gstnumber}
+                  onChange={(e) => setStoreFormData(prev => ({ ...prev, gstnumber: e.target.value.toUpperCase() }))}
+                  placeholder="Enter GST Number (e.g., 27ABCDE1234F1Z5)"
+                  pattern="^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pancard">PAN Number</Label>
+                <Input
+                  id="pancard"
+                  type="text"
+                  maxLength={10}
+                  value={storeFormData.pancard}
+                  onChange={(e) => setStoreFormData(prev => ({ ...prev, pancard: e.target.value.toUpperCase() }))}
+                  placeholder="Enter PAN Number (e.g., ABCDE1234F)"
+                  pattern="^[A-Z]{5}[0-9]{4}[A-Z]{1}$"
+                  required
+                />
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg">Store Admin Details</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="storeadminname">Admin Name *</Label>
+                  <Input
+                    id="storeadminname"
+                    value={storeFormData.storeadminname}
+                    onChange={(e) => setStoreFormData(prev => ({ ...prev, storeadminname: e.target.value }))}
+                    placeholder="Rajesh Patel"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="storeadminemail">Admin Email *</Label>
+                  <Input
+                    id="storeadminemail"
+                    type="email"
+                    value={storeFormData.storeadminemail}
+                    onChange={(e) => setStoreFormData(prev => ({ ...prev, storeadminemail: e.target.value }))}
+                    placeholder="rajesh@bikebiz.com"
+                  />
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddStoreOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddStore}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Store
+            <Button onClick={handleAddStoreWithAdmin}>
+              <Building className="w-4 h-4 mr-2" />
+              Create Store & Admin
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -866,9 +1022,9 @@ const StoreManagement = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="userName">Full Name *</Label>
+              <Label htmlFor="name">Full Name *</Label>
               <Input
-                id="userName"
+                id="name"
                 value={userFormData.name}
                 onChange={(e) => setUserFormData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="Priya Sharma"
@@ -876,9 +1032,9 @@ const StoreManagement = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="userEmail">Email *</Label>
+              <Label htmlFor="email">Email *</Label>
               <Input
-                id="userEmail"
+                id="email"
                 type="email"
                 value={userFormData.email}
                 onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
@@ -901,9 +1057,9 @@ const StoreManagement = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="userPhone">Phone (Optional)</Label>
+              <Label htmlFor="phone">Phone (Optional)</Label>
               <Input
-                id="userPhone"
+                id="phone"
                 value={userFormData.phone}
                 onChange={(e) => setUserFormData(prev => ({ ...prev, phone: e.target.value }))}
                 placeholder="+91 98765 43210"
