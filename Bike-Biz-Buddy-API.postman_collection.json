@@ -1,0 +1,784 @@
+{
+	"info": {
+		"_postman_id": "12345678-1234-1234-1234-123456789012",
+		"name": "Bike Biz Buddy API",
+		"description": "Complete API collection for testing Bike Biz Buddy backend with RBAC system",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Store the JWT token for future requests",
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    pm.environment.set('authToken', responseJson.token);",
+									"    pm.environment.set('userId', responseJson._id);",
+									"    pm.environment.set('userRole', responseJson.role);",
+									"    pm.environment.set('redirectUrl', responseJson.redirectUrl);",
+									"    ",
+									"    pm.test('Login successful', function () {",
+									"        pm.expect(responseJson).to.have.property('token');",
+									"        pm.expect(responseJson).to.have.property('role');",
+									"    });",
+									"}",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"login"
+							]
+						},
+						"description": "Login with email and password. Sets auth token in environment variables."
+					},
+					"response": []
+				},
+				{
+					"name": "Create User (Admin Only)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    const responseJson = pm.response.json();",
+									"    pm.test('User created successfully', function () {",
+									"        pm.expect(responseJson).to.have.property('_id');",
+									"        pm.expect(responseJson).to.have.property('email');",
+									"        pm.expect(responseJson).to.have.property('role');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"John Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"password123\",\n    \"role\": \"sales_executive\",\n    \"phone\": \"+1234567890\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/createUser",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"createUser"
+							]
+						},
+						"description": "Create a new user. Requires 'manage_store_users' permission (Admin only). Store field is optional."
+					},
+					"response": []
+				},
+				{
+					"name": "Create User with Store (Admin Only)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    const responseJson = pm.response.json();",
+									"    pm.test('User created successfully', function () {",
+									"        pm.expect(responseJson).to.have.property('_id');",
+									"        pm.expect(responseJson).to.have.property('email');",
+									"        pm.expect(responseJson).to.have.property('role');",
+									"        pm.expect(responseJson).to.have.property('store');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"Store Manager\",\n    \"email\": \"store.manager@example.com\",\n    \"password\": \"password123\",\n    \"role\": \"store_admin\",\n    \"phone\": \"+1234567891\",\n    \"store\": \"{{storeId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/createUser",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"createUser"
+							]
+						},
+						"description": "Create a new user with store assignment. Use this after creating a store first. Requires 'manage_store_users' permission (Admin only)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users (Admin Only)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response is an array', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								""
+							]
+						},
+						"description": "Get all users. Requires 'manage_store_users' permission (Admin only)."
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication related endpoints including login and user management"
+		},
+		{
+			"name": "Store Management",
+			"item": [
+				{
+					"name": "Create Store",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    const responseJson = pm.response.json();",
+									"    pm.environment.set('storeId', responseJson.store._id);",
+									"    ",
+									"    pm.test('Store created successfully', function () {",
+									"        pm.expect(responseJson).to.have.property('message');",
+									"        pm.expect(responseJson).to.have.property('store');",
+									"        pm.expect(responseJson.store).to.have.property('_id');",
+									"        pm.expect(responseJson.store).to.have.property('storename');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"storename\": \"Main Store Downtown\",\n    \"address\": \"123 Main Street, Downtown\",\n    \"googlemaplink\": \"https://maps.google.com/sample-link\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"latitude\": 40.7128,\n    \"longitude\": -74.0060,\n    \"phone\": \"+1234567890\",\n    \"whatsapp\": \"+1234567890\",\n    \"storeemail\": \"store@example.com\",\n    \"pancard\": \"ABCDE1234F\",\n    \"gstnumber\": \"12ABCDE3456F7Z8\",\n    \"password\": \"storepassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/stores/createstore",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"stores",
+								"createstore"
+							]
+						},
+						"description": "Create a new store. Requires 'manage_store' permission."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Stores (Global Admin Only)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response is an array', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/stores/getStores",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"stores",
+								"getStores"
+							]
+						},
+						"description": "Get all stores. Only global_admin can access this endpoint."
+					},
+					"response": []
+				}
+			],
+			"description": "Store management endpoints for creating and retrieving stores"
+		},
+		{
+			"name": "Test Different Roles",
+			"item": [
+				{
+					"name": "Login as Global Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    pm.environment.set('globalAdminToken', responseJson.token);",
+									"    pm.test('Global admin login successful', function () {",
+									"        pm.expect(responseJson.role).to.eql('global_admin');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"global.admin@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"login"
+							]
+						},
+						"description": "Login as global admin to test highest privilege level"
+					},
+					"response": []
+				},
+				{
+					"name": "Login as Store Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    pm.environment.set('storeAdminToken', responseJson.token);",
+									"    pm.test('Store admin login successful', function () {",
+									"        pm.expect(responseJson.role).to.eql('store_admin');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"store.admin@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"login"
+							]
+						},
+						"description": "Login as store admin to test store-level permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "Login as Sales Executive",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    pm.environment.set('salesExecutiveToken', responseJson.token);",
+									"    pm.test('Sales executive login successful', function () {",
+									"        pm.expect(responseJson.role).to.eql('sales_executive');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"sales.exec@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"login"
+							]
+						},
+						"description": "Login as sales executive to test limited permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Unauthorized Access (Sales Executive trying to create user)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Should return 403 Forbidden', function () {",
+									"    pm.response.to.have.status(403);",
+									"});",
+									"",
+									"pm.test('Should have permission denied message', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.include('permission');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{salesExecutiveToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"Test User\",\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\",\n    \"role\": \"sales_executive\",\n    \"phone\": \"+1234567890\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/createUser",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"createUser"
+							]
+						},
+						"description": "Test that sales executive cannot create users (should fail with 403)"
+					},
+					"response": []
+				}
+			],
+			"description": "Test different user roles and their permissions"
+		},
+		{
+			"name": "Error Scenarios",
+			"item": [
+				{
+					"name": "Login with Invalid Credentials",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Should return 400 Bad Request', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Should have error message', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.include('Invalid');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"wrong@example.com\",\n    \"password\": \"wrongpassword\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"login"
+							]
+						},
+						"description": "Test login with invalid credentials"
+					},
+					"response": []
+				},
+				{
+					"name": "Create User with Duplicate Email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Should return 400 Bad Request', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Should have duplicate user message', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.include('already exists');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"Duplicate User\",\n    \"email\": \"admin@example.com\",\n    \"password\": \"password123\",\n    \"role\": \"sales_executive\",\n    \"phone\": \"+1234567890\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/createUser",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"createUser"
+							]
+						},
+						"description": "Test creating user with duplicate email"
+					},
+					"response": []
+				},
+				{
+					"name": "Access Protected Route Without Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Should return 401 Unauthorized', function () {",
+									"    pm.response.to.have.status(401);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								""
+							]
+						},
+						"description": "Test accessing protected route without authorization token"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Store with Duplicate Store Name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Should return 400 Bad Request', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Should have duplicate field message', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.include('Duplicate');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"storename\": \"Main Store Downtown\",\n    \"address\": \"456 Another Street\",\n    \"googlemaplink\": \"https://maps.google.com/another-link\",\n    \"city\": \"Los Angeles\",\n    \"state\": \"CA\",\n    \"latitude\": 34.0522,\n    \"longitude\": -118.2437,\n    \"phone\": \"+0987654321\",\n    \"whatsapp\": \"+0987654321\",\n    \"storeemail\": \"another.store@example.com\",\n    \"pancard\": \"FGHIJ5678K\",\n    \"gstnumber\": \"34FGHIJ7890K1L2\",\n    \"password\": \"anotherpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/stores/createstore",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"stores",
+								"createstore"
+							]
+						},
+						"description": "Test creating store with duplicate store name"
+					},
+					"response": []
+				}
+			],
+			"description": "Test various error scenarios and edge cases"
+		},
+		{
+			"name": "Server Health Check",
+			"item": [
+				{
+					"name": "Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('API is running', function () {",
+									"    pm.expect(pm.response.text()).to.include('API is running');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								""
+							]
+						},
+						"description": "Basic health check to ensure the server is running"
+					},
+					"response": []
+				}
+			],
+			"description": "Basic server health check endpoints"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		}
+	]
+}

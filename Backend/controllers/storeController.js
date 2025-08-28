@@ -11,28 +11,19 @@ export const createStore = async(req, res) => {
         phone, whatsapp, state, storeemail, pancard, gstnumber, password
     } = req.body;
 
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     try{
         // create a new store
         const newStore = new Store({
             storename, address, googlemaplink, city, latitude, longitude,
             phone, whatsapp, state, storeemail, pancard, gstnumber, password
         });
-        await newStore.save({session});
-
-        await session.commitTransaction();
-        session.endSession();
+        await newStore.save();
 
         res.status(201).json({
             message: "New store created successfully.",
             store: newStore,
         });
     } catch(error){
-        await session.abortTransaction();
-        session.endSession();
-x
         if (error.code === 11000) {
             const field = Object.keys(error.keyValue)[0];
             return res.status(400).json({

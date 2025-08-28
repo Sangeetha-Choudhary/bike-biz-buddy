@@ -44,7 +44,7 @@ export const loginUser = async (req, res) => {
 // Signup
 
 export const createUser = async (req, res) => {
-  const { username, email, password, role, store } = req.body;
+  const { username, email, password, role, store, phone } = req.body;
   try {
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -61,6 +61,7 @@ export const createUser = async (req, res) => {
       password: hashedPassword,
       role,
       store,
+      phone,
     });
 
     if (user) {

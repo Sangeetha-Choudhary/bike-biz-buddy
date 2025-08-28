@@ -5,9 +5,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+} from "@/components/ui/drawer";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,10 +35,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth, Store, User } from "@/contexts/AuthContext";
 import PermissionWrapper from "@/components/PermissionWrapper";
-import { 
-  Search, 
-  Filter, 
-  MapPin, 
+import {
+  Search,
+  Filter,
+  MapPin,
   Phone,
   Mail,
   User as UserIcon,
@@ -38,7 +58,7 @@ import {
   Target,
   Clock,
   Star,
-  Activity
+  Activity,
 } from "lucide-react";
 
 interface StoreFormData {
@@ -75,7 +95,7 @@ const StoreManagement = () => {
   const [editStoreOpen, setEditStoreOpen] = useState(false);
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState("overview");
-  
+
   const [storeFormData, setStoreFormData] = useState<StoreFormData>({
     storename: "",
     address: "",
@@ -96,7 +116,7 @@ const StoreManagement = () => {
     name: "",
     email: "",
     department: "Lead Generation",
-    phone: ""
+    phone: "",
   });
 
   const { toast } = useToast();
@@ -111,14 +131,13 @@ const StoreManagement = () => {
 
   const loadStoresData = () => {
     // For global admin, show all stores
-    if (user?.role === 'global_admin' && user?.stores) {
+    if (user?.role === "global_admin" && user?.stores) {
       setStores(user.stores);
-    } 
-    // For store admin, show only their store
-    else if (user?.role === 'store_admin' && user?.managedStore) {
-      setStores([user.managedStore]);
     }
-    else {
+    // For store admin, show only their store
+    else if (user?.role === "store_admin" && user?.managedStore) {
+      setStores([user.managedStore]);
+    } else {
       setStores([]);
     }
   };
@@ -127,43 +146,53 @@ const StoreManagement = () => {
     // Simulate loading users for the store
     const sampleUsers: User[] = [
       {
-        id: '5',
-        name: 'Priya Sharma',
-        email: 'sales1@mumbai.com',
-        role: 'sales_executive',
-        permissions: ['manage_leads', 'view_inventory'],
-        storeId: '1',
-        storeName: 'Mumbai Central Store',
-        city: 'Mumbai',
-        department: 'Lead Generation'
+        id: "5",
+        name: "Priya Sharma",
+        email: "sales1@mumbai.com",
+        role: "sales_executive",
+        permissions: ["manage_leads", "view_inventory"],
+        storeId: "1",
+        storeName: "Mumbai Central Store",
+        city: "Mumbai",
+        department: "Lead Generation",
       },
       {
-        id: '6',
-        name: 'Rohit Kumar',
-        email: 'sales2@mumbai.com',
-        role: 'sales_executive',
-        permissions: ['manage_leads', 'view_inventory'],
-        storeId: '1',
-        storeName: 'Mumbai Central Store',
-        city: 'Mumbai',
-        department: 'Sales & Fulfillment'
-      }
+        id: "6",
+        name: "Rohit Kumar",
+        email: "sales2@mumbai.com",
+        role: "sales_executive",
+        permissions: ["manage_leads", "view_inventory"],
+        storeId: "1",
+        storeName: "Mumbai Central Store",
+        city: "Mumbai",
+        department: "Sales & Fulfillment",
+      },
     ];
 
-
-    if (user?.role === 'store_admin') {
+    if (user?.role === "store_admin") {
       // Filter users for current store
-      const currentStoreUsers = sampleUsers.filter(u => u.storeId === user.storeId);
+      const currentStoreUsers = sampleUsers.filter(
+        (u) => u.storeId === user.storeId
+      );
       setStoreUsers(currentStoreUsers);
-    } else if (user?.role === 'global_admin') {
+    } else if (user?.role === "global_admin") {
       // Global admin sees all users
       setStoreUsers(sampleUsers);
     }
   };
 
   const handleAddStoreWithAdmin = () => {
-    if (!storeFormData.storename || !storeFormData.city || !storeFormData.storeadminname || !storeFormData.storeadminemail) {
-      toast({ title: "Missing Information", description: "Please fill in all required fields.", variant: "destructive" });
+    if (
+      !storeFormData.storename ||
+      !storeFormData.city ||
+      !storeFormData.storeadminname ||
+      !storeFormData.storeadminemail
+    ) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
       return;
     }
     const storeId = Date.now().toString();
@@ -186,18 +215,28 @@ const StoreManagement = () => {
       name: storeFormData.storeadminname,
       email: storeFormData.storeadminemail,
       role: "store_admin",
-      permissions: ["manage_store","manage_store_users","manage_leads","manage_inventory","match_engine","view_analytics"],
+      permissions: [
+        "manage_store",
+        "manage_store_users",
+        "manage_leads",
+        "manage_inventory",
+        "match_engine",
+        "view_analytics",
+      ],
       storeId,
       storeName: storeFormData.storename,
       city: storeFormData.city,
       department: "Store Management",
       managedStore: newStore,
     };
-    setStores(prev => [newStore, ...prev]);
-    setStoreUsers(prev => [newStoreAdmin, ...prev]);
+    setStores((prev) => [newStore, ...prev]);
+    setStoreUsers((prev) => [newStoreAdmin, ...prev]);
     setAddStoreOpen(false);
     resetStoreForm();
-    toast({ title: "Store & Admin Created Successfully!", description: `${newStore.name} has been created with ${newStoreAdmin.name} as Store Admin.` });
+    toast({
+      title: "Store & Admin Created Successfully!",
+      description: `${newStore.name} has been created with ${newStoreAdmin.name} as Store Admin.`,
+    });
   };
 
   // Deprecated simple add; unified into handleAddStoreWithAdmin
@@ -216,15 +255,20 @@ const StoreManagement = () => {
       id: Date.now().toString(),
       name: userFormData.name,
       email: userFormData.email,
-      role: 'sales_executive',
-      permissions: ['manage_leads', 'view_inventory', 'match_engine', 'create_sales'],
-      storeId: user?.storeId || selectedStore?.id || '',
-      storeName: user?.storeName || selectedStore?.name || '',
-      city: user?.city || selectedStore?.city || '',
-      department: userFormData.department
+      role: "sales_executive",
+      permissions: [
+        "manage_leads",
+        "view_inventory",
+        "match_engine",
+        "create_sales",
+      ],
+      storeId: user?.storeId || selectedStore?.id || "",
+      storeName: user?.storeName || selectedStore?.name || "",
+      city: user?.city || selectedStore?.city || "",
+      department: userFormData.department,
     };
 
-    setStoreUsers(prev => [newUser, ...prev]);
+    setStoreUsers((prev) => [newUser, ...prev]);
     setAddUserOpen(false);
     resetUserForm();
 
@@ -257,14 +301,14 @@ const StoreManagement = () => {
       name: "",
       email: "",
       department: "Lead Generation",
-      phone: ""
+      phone: "",
     });
   };
 
   const getStatusBadge = (status: string) => {
     const variants = {
       active: "bg-green-100 text-green-800 border-green-200",
-      inactive: "bg-red-100 text-red-800 border-red-200"
+      inactive: "bg-red-100 text-red-800 border-red-200",
     };
     return variants[status as keyof typeof variants] || variants.active;
   };
@@ -273,15 +317,19 @@ const StoreManagement = () => {
     const variants = {
       "Lead Generation": "bg-blue-100 text-blue-800 border-blue-200",
       "Sales & Fulfillment": "bg-green-100 text-green-800 border-green-200",
-      "Store Management": "bg-purple-100 text-purple-800 border-purple-200"
+      "Store Management": "bg-purple-100 text-purple-800 border-purple-200",
     };
-    return variants[department as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return (
+      variants[department as keyof typeof variants] ||
+      "bg-gray-100 text-gray-800 border-gray-200"
+    );
   };
 
-  const filteredStores = stores.filter(store =>
-    store.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    store.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    store.location.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredStores = stores.filter(
+    (store) =>
+      store.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      store.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      store.location.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const StoreCard = ({ store }: { store: Store }) => (
@@ -295,8 +343,12 @@ const StoreManagement = () => {
                   <Building className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-foreground">{store.name}</h4>
-                  <p className="text-sm text-muted-foreground">{store.location}, {store.city}</p>
+                  <h4 className="font-semibold text-foreground">
+                    {store.name}
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    {store.location}, {store.city}
+                  </p>
                 </div>
               </div>
             </div>
@@ -330,9 +382,9 @@ const StoreManagement = () => {
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button 
-              size="sm" 
-              variant="outline" 
+            <Button
+              size="sm"
+              variant="outline"
               className="flex-1"
               onClick={() => {
                 setSelectedStore(store);
@@ -343,26 +395,26 @@ const StoreManagement = () => {
               View Details
             </Button>
             <PermissionWrapper permission="manage_store">
-              <Button 
-                size="sm" 
-                variant="outline" 
+              <Button
+                size="sm"
+                variant="outline"
                 className="flex-1"
                 onClick={() => {
                   setSelectedStore(store);
                   setStoreFormData({
                     storename: store.name,
-                    address: store.address || '',
-                    googlemaplink: store.googlemaplink || '',
+                    address: store.address || "",
+                    googlemaplink: store.googlemaplink || "",
                     city: store.city,
                     latitude: 0,
                     longitude: 0,
-                    phone: store.phone || '',
-                    pancard: '',
+                    phone: store.phone || "",
+                    pancard: "",
                     state: store.state,
-                    gstnumber: '',
-                    storeadminname: store.manager || '',
-                    storeadminemail: '',
-                    whatsapp: '',
+                    gstnumber: "",
+                    storeadminname: store.manager || "",
+                    storeadminemail: "",
+                    whatsapp: "",
                   });
                   setEditStoreOpen(true);
                 }}
@@ -391,7 +443,7 @@ const StoreManagement = () => {
                 <p className="text-xs text-muted-foreground">{user.email}</p>
               </div>
             </div>
-            <Badge className={getDepartmentBadge(user.department || '')}>
+            <Badge className={getDepartmentBadge(user.department || "")}>
               {user.department}
             </Badge>
           </div>
@@ -411,13 +463,19 @@ const StoreManagement = () => {
             <DrawerHeader>
               <DrawerTitle>Store Details</DrawerTitle>
               <DrawerDescription>
-                {selectedStore ? `Information for ${selectedStore.name}` : 'Loading...'}
+                {selectedStore
+                  ? `Information for ${selectedStore.name}`
+                  : "Loading..."}
               </DrawerDescription>
             </DrawerHeader>
             <div className="px-4">
               <ScrollArea className="max-h-[70vh]">
                 {selectedStore && (
-                  <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
+                  <Tabs
+                    value={currentTab}
+                    onValueChange={setCurrentTab}
+                    className="w-full"
+                  >
                     <TabsList className="grid w-full grid-cols-3">
                       <TabsTrigger value="overview">Overview</TabsTrigger>
                       <TabsTrigger value="team">Team</TabsTrigger>
@@ -457,7 +515,7 @@ const StoreManagement = () => {
                         <h3 className="font-semibold">Store Team</h3>
                         <Button
                           size="sm"
-                          onClick={() => window.location.hash = '#users'}
+                          onClick={() => (window.location.hash = "#users")}
                           variant="outline"
                         >
                           <Plus className="w-3 h-3 mr-1" />
@@ -466,18 +524,24 @@ const StoreManagement = () => {
                       </div>
                       <div className="space-y-2">
                         {storeUsers
-                          .filter(u => u.storeId === selectedStore.id)
-                          .map(user => (
+                          .filter((u) => u.storeId === selectedStore.id)
+                          .map((user) => (
                             <UserCard key={user.id} user={user} />
                           ))}
-                        {storeUsers.filter(u => u.storeId === selectedStore.id).length === 0 && (
+                        {storeUsers.filter(
+                          (u) => u.storeId === selectedStore.id
+                        ).length === 0 && (
                           <div className="text-center py-8">
                             <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                            <p className="text-sm text-muted-foreground mb-2">No sales executives assigned to this store</p>
-                            <p className="text-xs text-muted-foreground mb-4">Use User Management to add team members</p>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              No sales executives assigned to this store
+                            </p>
+                            <p className="text-xs text-muted-foreground mb-4">
+                              Use User Management to add team members
+                            </p>
                             <Button
                               size="sm"
-                              onClick={() => window.location.hash = '#users'}
+                              onClick={() => (window.location.hash = "#users")}
                               variant="outline"
                             >
                               <Users className="w-3 h-3 mr-1" />
@@ -494,7 +558,9 @@ const StoreManagement = () => {
                           <div className="flex items-center gap-2">
                             <TrendingUp className="w-4 h-4 text-green-600" />
                             <div>
-                              <p className="text-xs text-muted-foreground">Sales</p>
+                              <p className="text-xs text-muted-foreground">
+                                Sales
+                              </p>
                               <p className="font-semibold">₹2.5L</p>
                             </div>
                           </div>
@@ -503,7 +569,9 @@ const StoreManagement = () => {
                           <div className="flex items-center gap-2">
                             <Users className="w-4 h-4 text-blue-600" />
                             <div>
-                              <p className="text-xs text-muted-foreground">Leads</p>
+                              <p className="text-xs text-muted-foreground">
+                                Leads
+                              </p>
                               <p className="font-semibold">45</p>
                             </div>
                           </div>
@@ -512,7 +580,9 @@ const StoreManagement = () => {
                           <div className="flex items-center gap-2">
                             <Package className="w-4 h-4 text-purple-600" />
                             <div>
-                              <p className="text-xs text-muted-foreground">Inventory</p>
+                              <p className="text-xs text-muted-foreground">
+                                Inventory
+                              </p>
                               <p className="font-semibold">23</p>
                             </div>
                           </div>
@@ -521,7 +591,9 @@ const StoreManagement = () => {
                           <div className="flex items-center gap-2">
                             <Target className="w-4 h-4 text-orange-600" />
                             <div>
-                              <p className="text-xs text-muted-foreground">Conversion</p>
+                              <p className="text-xs text-muted-foreground">
+                                Conversion
+                              </p>
                               <p className="font-semibold">68%</p>
                             </div>
                           </div>
@@ -533,7 +605,10 @@ const StoreManagement = () => {
               </ScrollArea>
             </div>
             <DrawerFooter>
-              <Button variant="outline" onClick={() => setStoreDetailsOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setStoreDetailsOpen(false)}
+              >
                 Close
               </Button>
             </DrawerFooter>
@@ -545,11 +620,17 @@ const StoreManagement = () => {
             <DialogHeader>
               <DialogTitle>Store Details</DialogTitle>
               <DialogDescription>
-                {selectedStore ? `Information for ${selectedStore.name}` : 'Loading...'}
+                {selectedStore
+                  ? `Information for ${selectedStore.name}`
+                  : "Loading..."}
               </DialogDescription>
             </DialogHeader>
             {selectedStore && (
-              <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
+              <Tabs
+                value={currentTab}
+                onValueChange={setCurrentTab}
+                className="w-full"
+              >
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="overview">Overview</TabsTrigger>
                   <TabsTrigger value="team">Team</TabsTrigger>
@@ -559,53 +640,69 @@ const StoreManagement = () => {
                 <TabsContent value="overview" className="space-y-6">
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-4">
-                      <h3 className="font-semibold text-lg">Store Information</h3>
+                      <h3 className="font-semibold text-lg">
+                        Store Information
+                      </h3>
                       <div className="space-y-3">
                         <div className="flex items-center gap-3">
                           <Building className="w-5 h-5 text-muted-foreground" />
                           <div>
                             <p className="font-medium">{selectedStore.name}</p>
-                            <p className="text-sm text-muted-foreground">{selectedStore.location}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {selectedStore.location}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
                           <MapPin className="w-5 h-5 text-muted-foreground" />
                           <div>
                             <p className="font-medium">Address</p>
-                            <p className="text-sm text-muted-foreground">{selectedStore.address}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {selectedStore.address}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
                           <Phone className="w-5 h-5 text-muted-foreground" />
                           <div>
                             <p className="font-medium">Phone</p>
-                            <p className="text-sm text-muted-foreground">{selectedStore.phone}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {selectedStore.phone}
+                            </p>
                           </div>
                         </div>
                       </div>
                     </div>
                     <div className="space-y-4">
-                      <h3 className="font-semibold text-lg">Contact & Management</h3>
+                      <h3 className="font-semibold text-lg">
+                        Contact & Management
+                      </h3>
                       <div className="space-y-3">
                         <div className="flex items-center gap-3">
                           <Mail className="w-5 h-5 text-muted-foreground" />
                           <div>
                             <p className="font-medium">Email</p>
-                            <p className="text-sm text-muted-foreground">{selectedStore.email}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {selectedStore.email}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
                           <UserIcon className="w-5 h-5 text-muted-foreground" />
                           <div>
                             <p className="font-medium">Store Manager</p>
-                            <p className="text-sm text-muted-foreground">{selectedStore.manager}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {selectedStore.manager}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
                           <Calendar className="w-5 h-5 text-muted-foreground" />
                           <div>
                             <p className="font-medium">Created</p>
-                            <p className="text-sm text-muted-foreground">{selectedStore.createdDate}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {selectedStore.createdDate}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -617,7 +714,7 @@ const StoreManagement = () => {
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-lg">Store Team</h3>
                     <Button
-                      onClick={() => window.location.hash = '#users'}
+                      onClick={() => (window.location.hash = "#users")}
                       variant="outline"
                     >
                       <Users className="w-4 h-4 mr-2" />
@@ -626,17 +723,23 @@ const StoreManagement = () => {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {storeUsers
-                      .filter(u => u.storeId === selectedStore.id)
-                      .map(user => (
+                      .filter((u) => u.storeId === selectedStore.id)
+                      .map((user) => (
                         <UserCard key={user.id} user={user} />
                       ))}
-                    {storeUsers.filter(u => u.storeId === selectedStore.id).length === 0 && (
+                    {storeUsers.filter((u) => u.storeId === selectedStore.id)
+                      .length === 0 && (
                       <div className="col-span-2 text-center py-8">
                         <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                        <h4 className="font-semibold mb-2">No Team Members Yet</h4>
-                        <p className="text-muted-foreground mb-4">Use User Management to add sales executives to this store</p>
+                        <h4 className="font-semibold mb-2">
+                          No Team Members Yet
+                        </h4>
+                        <p className="text-muted-foreground mb-4">
+                          Use User Management to add sales executives to this
+                          store
+                        </p>
                         <Button
-                          onClick={() => window.location.hash = '#users'}
+                          onClick={() => (window.location.hash = "#users")}
                         >
                           <Users className="w-4 h-4 mr-2" />
                           Go to User Management
@@ -653,9 +756,13 @@ const StoreManagement = () => {
                       <div className="flex items-center gap-3">
                         <TrendingUp className="w-8 h-8 text-green-600" />
                         <div>
-                          <p className="text-sm text-muted-foreground">Monthly Sales</p>
+                          <p className="text-sm text-muted-foreground">
+                            Monthly Sales
+                          </p>
                           <p className="text-xl font-bold">₹2.5L</p>
-                          <p className="text-xs text-green-600">+12% vs last month</p>
+                          <p className="text-xs text-green-600">
+                            +12% vs last month
+                          </p>
                         </div>
                       </div>
                     </Card>
@@ -663,7 +770,9 @@ const StoreManagement = () => {
                       <div className="flex items-center gap-3">
                         <Users className="w-8 h-8 text-blue-600" />
                         <div>
-                          <p className="text-sm text-muted-foreground">Active Leads</p>
+                          <p className="text-sm text-muted-foreground">
+                            Active Leads
+                          </p>
                           <p className="text-xl font-bold">45</p>
                           <p className="text-xs text-blue-600">+8 this week</p>
                         </div>
@@ -673,9 +782,13 @@ const StoreManagement = () => {
                       <div className="flex items-center gap-3">
                         <Package className="w-8 h-8 text-purple-600" />
                         <div>
-                          <p className="text-sm text-muted-foreground">Inventory</p>
+                          <p className="text-sm text-muted-foreground">
+                            Inventory
+                          </p>
                           <p className="text-xl font-bold">23</p>
-                          <p className="text-xs text-purple-600">Available units</p>
+                          <p className="text-xs text-purple-600">
+                            Available units
+                          </p>
                         </div>
                       </div>
                     </Card>
@@ -683,9 +796,13 @@ const StoreManagement = () => {
                       <div className="flex items-center gap-3">
                         <Target className="w-8 h-8 text-orange-600" />
                         <div>
-                          <p className="text-sm text-muted-foreground">Conversion Rate</p>
+                          <p className="text-sm text-muted-foreground">
+                            Conversion Rate
+                          </p>
                           <p className="text-xl font-bold">68%</p>
-                          <p className="text-xs text-orange-600">Above target</p>
+                          <p className="text-xs text-orange-600">
+                            Above target
+                          </p>
                         </div>
                       </div>
                     </Card>
@@ -705,18 +822,23 @@ const StoreManagement = () => {
       <div className="flex flex-col gap-3 lg:flex-row lg:justify-between lg:items-center">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-xl lg:text-2xl font-bold text-foreground">Store Management</h1>
-            {user?.role === 'store_admin' && user?.storeName && (
-              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+            <h1 className="text-xl lg:text-2xl font-bold text-foreground">
+              Store Management
+            </h1>
+            {user?.role === "store_admin" && user?.storeName && (
+              <Badge
+                variant="outline"
+                className="bg-primary/10 text-primary border-primary/20"
+              >
                 <Building className="w-3 h-3 mr-1" />
                 {user.storeName}
               </Badge>
             )}
           </div>
           <p className="text-sm lg:text-base text-muted-foreground">
-            {user?.role === 'global_admin' 
-              ? 'Manage all stores and their operations' 
-              : 'Manage your store and team'}
+            {user?.role === "global_admin"
+              ? "Manage all stores and their operations"
+              : "Manage your store and team"}
           </p>
         </div>
         <PermissionWrapper permission="all">
@@ -737,8 +859,8 @@ const StoreManagement = () => {
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input 
-            placeholder="Search stores by name, city, or location..." 
+          <Input
+            placeholder="Search stores by name, city, or location..."
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -762,7 +884,9 @@ const StoreManagement = () => {
           <Building className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No Stores Found</h3>
           <p className="text-muted-foreground mb-4">
-            {searchTerm ? 'No stores match your search criteria' : 'No stores available'}
+            {searchTerm
+              ? "No stores match your search criteria"
+              : "No stores available"}
           </p>
           <PermissionWrapper permission="all">
             <Button onClick={() => setAddStoreOpen(true)}>
@@ -795,30 +919,116 @@ const StoreManagement = () => {
                     id="storename"
                     type="text"
                     value={storeFormData.storename}
-                    onChange={e => setStoreFormData(prev => ({ ...prev, storename: e.target.value }))}
+                    onChange={(e) =>
+                      setStoreFormData((prev) => ({
+                        ...prev,
+                        storename: e.target.value,
+                      }))
+                    }
                     placeholder="Store Name"
                     required
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="state">State*</Label>
+                  <Input
+                    id="state"
+                    value={storeFormData.state}
+                    onChange={(e) =>
+                      setStoreFormData((prev) => ({
+                        ...prev,
+                        state: e.target.value,
+                      }))
+                    }
+                    placeholder="Maharashtra"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="city">City*</Label>
                   <Input
                     id="city"
                     type="text"
                     value={storeFormData.city}
-                    onChange={(e) => setStoreFormData(prev => ({ ...prev, city: e.target.value }))}
+                    onChange={(e) =>
+                      setStoreFormData((prev) => ({
+                        ...prev,
+                        city: e.target.value,
+                      }))
+                    }
                     placeholder="Mumbai"
                     required
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone (India)*</Label>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-input bg-muted text-sm text-muted-foreground">
+                      +91
+                    </span>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      inputMode="numeric"
+                      className="rounded-l-none"
+                      placeholder="9876543210"
+                      maxLength={10}
+                      value={storeFormData.phone}
+                      onChange={(e) =>
+                        setStoreFormData((prev) => ({
+                          ...prev,
+                          phone: e.target.value.replace(/\D/g, "").slice(0, 10),
+                        }))
+                      }
+                      pattern="^[6-9]\d{9}$"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="whatsapp">Whatsapp Number (India)*</Label>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-input bg-muted text-sm text-muted-foreground">
+                      +91
+                    </span>
+                    <Input
+                      id="whatsapp"
+                      type="tel"
+                      inputMode="numeric"
+                      className="rounded-l-none"
+                      placeholder="9876543210"
+                      maxLength={10}
+                      value={storeFormData.whatsapp}
+                      onChange={(e) =>
+                        setStoreFormData((prev) => ({
+                          ...prev,
+                          whatsapp: e.target.value
+                            .replace(/\D/g, "")
+                            .slice(0, 10),
+                        }))
+                      }
+                      pattern="^[6-9]\d{9}$"
+                      required
+                    />
+                  </div>
+                </div>
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="address">Address*</Label>
                 <Input
                   id="address"
                   value={storeFormData.address}
-                  onChange={(e) => setStoreFormData(prev => ({ ...prev, address: e.target.value }))}
+                  onChange={(e) =>
+                    setStoreFormData((prev) => ({
+                      ...prev,
+                      address: e.target.value,
+                    }))
+                  }
                   placeholder="123 Dr. D.N. Road, Mumbai Central, Mumbai - 400008"
                   required
                 />
@@ -829,7 +1039,12 @@ const StoreManagement = () => {
                   id="googlemaplink"
                   type="url"
                   value={storeFormData.googlemaplink}
-                  onChange={(e) => setStoreFormData(prev => ({ ...prev, googlemaplink: e.target.value }))}
+                  onChange={(e) =>
+                    setStoreFormData((prev) => ({
+                      ...prev,
+                      googlemaplink: e.target.value,
+                    }))
+                  }
                   placeholder="https://maps.app.goo.gl/..."
                   pattern="https?://(maps\.google\.com|goo\.gl|maps\.app\.goo\.gl).*"
                 />
@@ -846,9 +1061,11 @@ const StoreManagement = () => {
                     step="any"
                     value={storeFormData.latitude}
                     onChange={(e) =>
-                      setStoreFormData(prev => ({
+                      setStoreFormData((prev) => ({
                         ...prev,
-                        latitude: Number.isNaN(e.target.valueAsNumber) ? 0 : e.target.valueAsNumber
+                        latitude: Number.isNaN(e.target.valueAsNumber)
+                          ? 0
+                          : e.target.valueAsNumber,
                       }))
                     }
                     placeholder="Enter latitude (e.g., 12.9716)"
@@ -865,9 +1082,11 @@ const StoreManagement = () => {
                     step="any"
                     value={storeFormData.longitude}
                     onChange={(e) =>
-                      setStoreFormData(prev => ({
+                      setStoreFormData((prev) => ({
                         ...prev,
-                        longitude: Number.isNaN(e.target.valueAsNumber) ? 0 : e.target.valueAsNumber
+                        longitude: Number.isNaN(e.target.valueAsNumber)
+                          ? 0
+                          : e.target.valueAsNumber,
                       }))
                     }
                     placeholder="Enter longitude (e.g., 77.5946)"
@@ -876,69 +1095,18 @@ const StoreManagement = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="state">State</Label>
-                  <Input
-                    id="state"
-                    value={storeFormData.state}
-                    onChange={(e) => setStoreFormData(prev => ({ ...prev, state: e.target.value }))}
-                    placeholder="Maharashtra"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone (India)</Label>
-                  <div className="flex">
-                    <span className="inline-flex items-center px-3 rounded-l-md border border-input bg-muted text-sm text-muted-foreground">
-                      +91
-                    </span>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      inputMode="numeric"
-                      className="rounded-l-none"
-                      placeholder="9876543210"
-                      maxLength={10}
-                      value={storeFormData.phone}
-                      onChange={(e) =>
-                        setStoreFormData(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, "").slice(0, 10) }))
-                      }
-                      pattern="^[6-9]\d{9}$"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="whatsapp">Whatsapp Number (India)</Label>
-                  <div className="flex">
-                    <span className="inline-flex items-center px-3 rounded-l-md border border-input bg-muted text-sm text-muted-foreground">
-                      +91
-                    </span>
-                    <Input
-                      id="whatsapp"
-                      type="tel"
-                      inputMode="numeric"
-                      className="rounded-l-none"
-                      placeholder="9876543210"
-                      maxLength={10}
-                      value={storeFormData.whatsapp}
-                      onChange={(e) =>
-                        setStoreFormData(prev => ({ ...prev, whatsapp: e.target.value.replace(/\D/g, "").slice(0, 10) }))
-                      }
-                      pattern="^[6-9]\d{9}$"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
               <div className="space-y-2">
-                <Label htmlFor="storeadminemail">Store Email</Label>
+                <Label htmlFor="storeadminemail">Store Email*</Label>
                 <Input
                   id="storeadminemail"
                   type="email"
                   value={storeFormData.storeadminemail}
-                  onChange={(e) => setStoreFormData(prev => ({ ...prev, storeadminemail: e.target.value }))}
+                  onChange={(e) =>
+                    setStoreFormData((prev) => ({
+                      ...prev,
+                      storeadminemail: e.target.value,
+                    }))
+                  }
                   placeholder="mumbai@bikebiz.com"
                 />
               </div>
@@ -946,26 +1114,36 @@ const StoreManagement = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="gstnumber">GST Number</Label>
+                <Label htmlFor="gstnumber">GST Number*</Label>
                 <Input
                   id="gstnumber"
                   type="text"
                   maxLength={15}
                   value={storeFormData.gstnumber}
-                  onChange={(e) => setStoreFormData(prev => ({ ...prev, gstnumber: e.target.value.toUpperCase() }))}
+                  onChange={(e) =>
+                    setStoreFormData((prev) => ({
+                      ...prev,
+                      gstnumber: e.target.value.toUpperCase(),
+                    }))
+                  }
                   placeholder="Enter GST Number (e.g., 27ABCDE1234F1Z5)"
                   pattern="^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="pancard">PAN Number</Label>
+                <Label htmlFor="pancard">PAN Number*</Label>
                 <Input
                   id="pancard"
                   type="text"
                   maxLength={10}
                   value={storeFormData.pancard}
-                  onChange={(e) => setStoreFormData(prev => ({ ...prev, pancard: e.target.value.toUpperCase() }))}
+                  onChange={(e) =>
+                    setStoreFormData((prev) => ({
+                      ...prev,
+                      pancard: e.target.value.toUpperCase(),
+                    }))
+                  }
                   placeholder="Enter PAN Number (e.g., ABCDE1234F)"
                   pattern="^[A-Z]{5}[0-9]{4}[A-Z]{1}$"
                   required
@@ -975,7 +1153,7 @@ const StoreManagement = () => {
 
             <Separator />
 
-            <div className="space-y-4">
+            {/* <div className="space-y-4">
               <h3 className="font-semibold text-lg">Store Admin Details</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -998,7 +1176,7 @@ const StoreManagement = () => {
                   />
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddStoreOpen(false)}>
@@ -1027,32 +1205,50 @@ const StoreManagement = () => {
               <Input
                 id="name"
                 value={userFormData.name}
-                onChange={(e) => setUserFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setUserFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
                 placeholder="Priya Sharma"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="email">Email *</Label>
               <Input
                 id="email"
                 type="email"
                 value={userFormData.email}
-                onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
+                onChange={(e) =>
+                  setUserFormData((prev) => ({
+                    ...prev,
+                    email: e.target.value,
+                  }))
+                }
                 placeholder="priya@bikebiz.com"
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="department">Department</Label>
-              <Select value={userFormData.department} onValueChange={(value) => setUserFormData(prev => ({ ...prev, department: value }))}>
+              <Select
+                value={userFormData.department}
+                onValueChange={(value) =>
+                  setUserFormData((prev) => ({ ...prev, department: value }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Lead Generation">Lead Generation</SelectItem>
-                  <SelectItem value="Sales & Fulfillment">Sales & Fulfillment</SelectItem>
-                  <SelectItem value="Customer Service">Customer Service</SelectItem>
+                  <SelectItem value="Lead Generation">
+                    Lead Generation
+                  </SelectItem>
+                  <SelectItem value="Sales & Fulfillment">
+                    Sales & Fulfillment
+                  </SelectItem>
+                  <SelectItem value="Customer Service">
+                    Customer Service
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1062,7 +1258,12 @@ const StoreManagement = () => {
               <Input
                 id="phone"
                 value={userFormData.phone}
-                onChange={(e) => setUserFormData(prev => ({ ...prev, phone: e.target.value }))}
+                onChange={(e) =>
+                  setUserFormData((prev) => ({
+                    ...prev,
+                    phone: e.target.value,
+                  }))
+                }
                 placeholder="+91 98765 43210"
               />
             </div>
