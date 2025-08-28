@@ -17,18 +17,23 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, 'Password is required'],
-      default: 'employee123', 
+      trim: true,
     },
     role: {
       type: String,
       enum: ['global_admin', 'store_admin', 'sales_executive', 'procurement_admin', 'procurement_executive'],
+      required: true,
     },
+    // The user references a store by its unique ID.
     store: {
-      type: String,
-      enum: ['Mumbai Central Store', 'Delhi Karol Bagh Store', 'Bangalore Koramangala Store'],
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Store',
+      required: false,
     },
     phone: {
       type: String,
+      required: [true, 'Phone number is required'],
+      trim: true,
     },
   },
   { timestamps: true },
