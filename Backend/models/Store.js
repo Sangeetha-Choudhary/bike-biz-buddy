@@ -15,7 +15,8 @@ const StoreSchema = new mongoose.Schema(
     },
     googlemaplink: {
       type: String,
-      unique: true,
+      // unique: true,
+      // sparse: true,
       trim: true,
     },
     city: {
@@ -59,14 +60,14 @@ const StoreSchema = new mongoose.Schema(
       type: String,
       // required: [true, 'Pancard number is required'],
       required: false,
-      unique: true,
+      // unique: true,
       trim: true,
     },
     gstnumber: {
       type: String,
       // required: [true, 'GST number is required'],
       required: false,
-      unique: true,
+      // unique: true,
       trim: true,
     },
     // status: {

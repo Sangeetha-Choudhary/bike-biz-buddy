@@ -5,29 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-  DrawerFooter,
-} from "@/components/ui/drawer";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -139,7 +119,7 @@ const StoreManagement = () => {
       const transformedStores = storesData.map((store: any) => ({
         id: store._id,
         name: store.storename,
-        location: `${store.city}, ${store.state}`, 
+        location: `${store.city}, ${store.state}`,
         address: store.address,
         phone: store.phone,
         whatsapp: store.whatsapp,
@@ -195,7 +175,7 @@ const StoreManagement = () => {
     }
   };
 
-  const handleAddStoreWithAdmin = async () => {
+  const handleAddStore = async () => {
     if (
       !storeFormData.storename ||
       !storeFormData.city ||
@@ -215,6 +195,14 @@ const StoreManagement = () => {
 
     try {
       setIsSubmitting(true);
+      const cleanedFormData: StoreFormData = {
+        ...storeFormData,
+        googlemaplink: storeFormData.googlemaplink?.trim() ? storeFormData.googlemaplink : undefined,
+        pancard: storeFormData.pancard?.trim() ? storeFormData.pancard : undefined,
+        gstnumber: storeFormData.gstnumber?.trim() ? storeFormData.gstnumber : undefined,
+        latitude: storeFormData.latitude !== undefined && storeFormData.latitude !== 0 ? storeFormData.latitude : undefined,
+        longitude: storeFormData.longitude !== undefined && storeFormData.longitude !== 0 ? storeFormData.longitude : undefined,
+      };
       const newStore = await apiService.createStore(storeFormData);
 
       // Transform response and add to stores list
@@ -229,8 +217,16 @@ const StoreManagement = () => {
         city: newStore.city,
         state: newStore.state,
         manager: newStore.manager?.name || "",
-        createdDate: new Date(newStore.createdAt || newStore.createdDate).toISOString().split("T")[0],
+        // createdDate: new Date(newStore.createdAt || newStore.createdDate).toISOString().split("T")[0],
+        createdDate: (newStore.createdAt || newStore.createdDate)
+          ? new Date(newStore.createdAt || newStore.createdDate).toISOString().split("T")[0]
+          : new Date().toISOString().split("T")[0],
         status: newStore.status || "active",
+        whatsapp: newStore.whatsapp || "",
+        latitude: newStore.latitude,
+        longitude: newStore.longitude,
+        gstnumber: newStore.gstnumber,
+        pancard: newStore.pancard,
       };
 
       setStores((prev) => [transformedStore, ...prev]);
@@ -377,14 +373,14 @@ const StoreManagement = () => {
       address: "",
       googlemaplink: "",
       city: "",
-      latitude: 0,
-      longitude: 0,
+      latitude: undefined,
+      longitude: undefined,
       phone: "",
-      pancard: "",
+      pancard: undefined,
       state: "",
-      gstnumber: "",
+      gstnumber: undefined,
       storeemail: "",
-      whatsapp: "",
+      whatsapp: undefined,
     });
   };
 
@@ -417,12 +413,17 @@ const StoreManagement = () => {
     );
   };
 
-  const filteredStores = stores.filter(
-    (store) =>
-      store.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      store.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      store.location.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStores = stores.filter((store) => {
+    const name = store.name ?? "";
+    const city = store.city ?? "";
+    const location = store.location ?? "";
+    const term = searchTerm.toLowerCase();
+    return (
+      name.toLowerCase().includes(term) ||
+      city.toLowerCase().includes(term) ||
+      location.toLowerCase().includes(term)
+    );
+  });
 
   const StoreCard = ({ store }: { store: Store }) => (
     <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
@@ -1093,7 +1094,7 @@ const StoreManagement = () => {
                       className="rounded-l-none"
                       placeholder="9876543210"
                       maxLength={10}
-                      value={storeFormData.whatsapp}
+                      value={storeFormData.whatsapp ?? ""}
                       onChange={(e) =>
                         setStoreFormData((prev) => ({
                           ...prev,
@@ -1133,11 +1134,11 @@ const StoreManagement = () => {
                 <Input
                   id="googlemaplink"
                   type="url"
-                  value={storeFormData.googlemaplink}
+                  value={storeFormData.googlemaplink ?? ""}
                   onChange={(e) =>
                     setStoreFormData((prev) => ({
                       ...prev,
-                      googlemaplink: e.target.value,
+                      googlemaplink: e.target.value || undefined,
                     }))
                   }
                   placeholder="https://maps.app.goo.gl/..."
@@ -1156,13 +1157,13 @@ const StoreManagement = () => {
                     min="-90"
                     max="90"
                     step="any"
-                    value={storeFormData.latitude}
+                    value={storeFormData.latitude ?? 0}
                     onChange={(e) =>
                       setStoreFormData((prev) => ({
                         ...prev,
                         latitude: Number.isNaN(e.target.valueAsNumber)
                           ? 0
-                          : e.target.valueAsNumber,
+                          : e.target.valueAsNumber || undefined,
                       }))
                     }
                     placeholder="Enter latitude (e.g., 12.9716)"
@@ -1178,13 +1179,13 @@ const StoreManagement = () => {
                     min="-180"
                     max="180"
                     step="any"
-                    value={storeFormData.longitude}
+                    value={storeFormData.longitude ?? 0}
                     onChange={(e) =>
                       setStoreFormData((prev) => ({
                         ...prev,
                         longitude: Number.isNaN(e.target.valueAsNumber)
                           ? 0
-                          : e.target.valueAsNumber,
+                          : e.target.valueAsNumber || undefined,
                       }))
                     }
                     placeholder="Enter longitude (e.g., 77.5946)"
@@ -1221,11 +1222,11 @@ const StoreManagement = () => {
                     id="gstnumber"
                     type="text"
                     maxLength={15}
-                    value={storeFormData.gstnumber}
+                    value={storeFormData.gstnumber ?? ""}
                     onChange={(e) =>
                       setStoreFormData((prev) => ({
                         ...prev,
-                        gstnumber: e.target.value.toUpperCase(),
+                        gstnumber: e.target.value.toUpperCase() || undefined,
                       }))
                     }
                     placeholder="Enter GST Number (e.g., 27ABCDE1234F1Z5)"
@@ -1240,11 +1241,11 @@ const StoreManagement = () => {
                     id="pancard"
                     type="text"
                     maxLength={10}
-                    value={storeFormData.pancard}
+                    value={storeFormData.pancard ?? ""}
                     onChange={(e) =>
                       setStoreFormData((prev) => ({
                         ...prev,
-                        pancard: e.target.value.toUpperCase(),
+                        pancard: e.target.value.toUpperCase() || undefined,
                       }))
                     }
                     placeholder="ABCDE1234F"
@@ -1258,7 +1259,7 @@ const StoreManagement = () => {
             <Button variant="outline" onClick={() => setAddStoreOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddStoreWithAdmin} disabled={isSubmitting}>
+            <Button onClick={handleAddStore} disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               <Building className="w-4 h-4 mr-2" />
               Create Store
@@ -1367,7 +1368,7 @@ const StoreManagement = () => {
                       className="rounded-l-none"
                       placeholder="9876543210"
                       maxLength={10}
-                      value={storeFormData.whatsapp}
+                      value={storeFormData.whatsapp ?? ""}
                       onChange={(e) =>
                         setStoreFormData((prev) => ({
                           ...prev,
@@ -1431,13 +1432,13 @@ const StoreManagement = () => {
                     min="-90"
                     max="90"
                     step="any"
-                    value={storeFormData.latitude}
+                    value={storeFormData.latitude ?? 0}
                     onChange={(e) =>
                       setStoreFormData((prev) => ({
                         ...prev,
                         latitude: Number.isNaN(e.target.valueAsNumber)
                           ? 0
-                          : e.target.valueAsNumber,
+                          : e.target.valueAsNumber || undefined,
                       }))
                     }
                     placeholder="Enter latitude (e.g., 12.9716)"
@@ -1454,13 +1455,13 @@ const StoreManagement = () => {
                     min="-180"
                     max="180"
                     step="any"
-                    value={storeFormData.longitude}
+                    value={storeFormData.longitude ?? 0}
                     onChange={(e) =>
                       setStoreFormData((prev) => ({
                         ...prev,
                         longitude: Number.isNaN(e.target.valueAsNumber)
                           ? 0
-                          : e.target.valueAsNumber,
+                          : e.target.valueAsNumber || undefined,
                       }))
                     }
                     placeholder="Enter longitude (e.g., 77.5946)"
@@ -1498,11 +1499,11 @@ const StoreManagement = () => {
                     id="gstnumber"
                     type="text"
                     maxLength={15}
-                    value={storeFormData.gstnumber}
+                    value={storeFormData.gstnumber ?? ""}
                     onChange={(e) =>
                       setStoreFormData((prev) => ({
                         ...prev,
-                        gstnumber: e.target.value.toUpperCase(),
+                        gstnumber: e.target.value.toUpperCase() || undefined,
                       }))
                     }
                     placeholder="Enter GST Number (e.g., 27ABCDE1234F1Z5)"
@@ -1518,11 +1519,11 @@ const StoreManagement = () => {
                     id="pancard"
                     type="text"
                     maxLength={10}
-                    value={storeFormData.pancard}
+                    value={storeFormData.pancard ?? ""}
                     onChange={(e) =>
                       setStoreFormData((prev) => ({
                         ...prev,
-                        pancard: e.target.value.toUpperCase(),
+                        pancard: e.target.value.toUpperCase() || undefined,
                       }))
                     }
                     placeholder="ABCDE1234F"
