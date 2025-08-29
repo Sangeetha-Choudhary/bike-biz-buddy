@@ -19,8 +19,11 @@ export interface Store {
   pancard?: string;
   manager?: string;
   createdDate: string;
-  googlemaplink: string;
+  googlemaplink?: string;
   status: 'active' | 'inactive';
+  isDeleted?: boolean;
+  deletedAt?: string | null;
+  deletedBy?: string | null;
 }
 
 export interface User {

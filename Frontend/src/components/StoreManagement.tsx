@@ -57,6 +57,10 @@ interface StoreFormData {
   gstnumber?: string;
   storeemail: string;
   whatsapp: string;
+  isDeleted?: boolean;
+  deletedAt?: Date | null;
+  status?: 'active' | 'inactive';
+  password?: string; // Added for store creation
 }
 
 interface UserFormData {
@@ -103,7 +107,7 @@ const StoreManagement = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { user, hasPermission } = useAuth();
-
+  
   // Load stores and users data
   useEffect(() => {
     loadStoresData();
@@ -134,6 +138,8 @@ const StoreManagement = () => {
         manager: store.manager?.name || "",
         createdDate: new Date(store.createdAt || store.createdDate).toISOString().split("T")[0],
         status: store.status || "active",
+        isDeleted: store.isDeleted || false,
+        deletedAt: store.deletedAt ? new Date(store.deletedAt).toISOString().split("T")[0] : null,
       }));
 
       setStores(transformedStores);
@@ -202,8 +208,9 @@ const StoreManagement = () => {
         gstnumber: storeFormData.gstnumber?.trim() ? storeFormData.gstnumber : undefined,
         latitude: storeFormData.latitude !== undefined && storeFormData.latitude !== 0 ? storeFormData.latitude : undefined,
         longitude: storeFormData.longitude !== undefined && storeFormData.longitude !== 0 ? storeFormData.longitude : undefined,
+        password: "DefaultPass@123", // Adding default password since it's required by the backend
       };
-      const newStore = await apiService.createStore(storeFormData);
+      const newStore = await apiService.createStore(cleanedFormData);
 
       // Transform response and add to stores list
       const transformedStore: Store = {
@@ -307,22 +314,49 @@ const StoreManagement = () => {
 
     try {
       setIsSubmitting(true);
-      const updatedStore = await apiService.updateStore(selectedStore.id, storeFormData);
+      
+      // Prepare data for API - convert from frontend format to backend format
+      const storeUpdateData = {
+        storename: storeFormData.storename,
+        address: storeFormData.address,
+        googlemaplink: storeFormData.googlemaplink?.trim() ? storeFormData.googlemaplink : undefined,
+        city: storeFormData.city,
+        latitude: storeFormData.latitude !== undefined ? storeFormData.latitude : undefined,
+        longitude: storeFormData.longitude !== undefined ? storeFormData.longitude : undefined,
+        phone: storeFormData.phone,
+        whatsapp: storeFormData.whatsapp,
+        state: storeFormData.state,
+        storeemail: storeFormData.storeemail,
+        pancard: storeFormData.pancard?.trim() ? storeFormData.pancard : undefined,
+        gstnumber: storeFormData.gstnumber?.trim() ? storeFormData.gstnumber : undefined,
+        status: storeFormData.status || 'active'
+      };
+      
+      const updatedStore = await apiService.updateStore(selectedStore.id, storeUpdateData);
 
       // Transform response and update stores list
       const transformedStore: Store = {
-        id: updatedStore._id,
-        name: updatedStore.name,
-        location: updatedStore.location,
+        id: updatedStore._id || updatedStore.id,
+        name: updatedStore.storename || updatedStore.name,
+        location: `${updatedStore.city}, ${updatedStore.state}`,
         address: updatedStore.address,
         phone: updatedStore.phone,
-        email: updatedStore.email,
+        email: updatedStore.storeemail || updatedStore.email,
         googlemaplink: updatedStore.googlemaplink,
         city: updatedStore.city,
         state: updatedStore.state,
         manager: updatedStore.manager?.name || "",
-        createdDate: new Date(updatedStore.createdDate).toISOString().split("T")[0],
+        createdDate: (updatedStore.createdAt || updatedStore.createdDate) 
+          ? new Date(updatedStore.createdAt || updatedStore.createdDate).toISOString().split("T")[0]
+          : new Date().toISOString().split("T")[0],
         status: updatedStore.status,
+        whatsapp: updatedStore.whatsapp,
+        latitude: updatedStore.latitude,
+        longitude: updatedStore.longitude,
+        gstnumber: updatedStore.gstnumber,
+        pancard: updatedStore.pancard,
+        isDeleted: updatedStore.isDeleted || false,
+        deletedAt: updatedStore.deletedAt ? new Date(updatedStore.deletedAt).toISOString().split("T")[0] : null,
       };
 
       setStores(prev => prev.map(store =>
@@ -351,17 +385,40 @@ const StoreManagement = () => {
   const handleDeleteStore = async (storeId: string) => {
     try {
       await apiService.deleteStore(storeId);
+    
+      // Remove deleted store from the list
       setStores(prev => prev.filter(store => store.id !== storeId));
 
       toast({
         title: "Store Deleted",
-        description: "Store has been deleted successfully.",
+        description: "Store has been soft deleted successfully.",
       });
     } catch (error) {
       console.error('Error deleting store:', error);
       toast({
         title: "Error Deleting Store",
         description: error instanceof Error ? error.message : "Failed to delete store",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleRestoreStore = async (storeId: string) => {
+    try {
+      await apiService.restoreStore(storeId);
+      setStores(prev => prev.map(store => 
+        store.id === storeId ? { ...store, isDeleted: false, status: 'active' } : store
+      ));
+
+      toast({
+        title: "Store Restored",
+        description: "Store has been restored successfully.",
+      });
+    } catch (error) {
+      console.error('Error restoring store:', error);
+      toast({
+        title: "Error Restoring Store",
+        description: error instanceof Error ? error.message : "Failed to restore store",
         variant: "destructive",
       });
     }
@@ -418,11 +475,20 @@ const StoreManagement = () => {
     const city = store.city ?? "";
     const location = store.location ?? "";
     const term = searchTerm.toLowerCase();
-    return (
+    
+    // Filter based on search term
+    const matchesSearch = (
       name.toLowerCase().includes(term) ||
       city.toLowerCase().includes(term) ||
       location.toLowerCase().includes(term)
     );
+    
+    // Filter out deleted stores
+    if (store.isDeleted) {
+      return false;
+    }
+    
+    return matchesSearch;
   });
 
   const StoreCard = ({ store }: { store: Store }) => (
@@ -477,45 +543,57 @@ const StoreManagement = () => {
           </div>
 
           <div className="flex gap-2 pt-2">
-            {/* <Button
-              size="sm"
-              variant="outline"
-              className="flex-1"
-              onClick={() => {
-                setSelectedStore(store);
-                setStoreDetailsOpen(true);
-              }}
-            >
-              <Eye className="w-3 h-3 mr-1" />
-              View Details
-            </Button> */}
             <PermissionWrapper permission="manage_store">
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex-1"
-                onClick={() => {
-                  setSelectedStore(store);
-                  setStoreFormData({
-                    storename: store.name,
-                    address: store.address || "",
-                    googlemaplink: store.googlemaplink || "",
-                    city: store.city,
-                    latitude: store.latitude ?? undefined,
-                    longitude: store.longitude ?? undefined,
-                    phone: store.phone || "",
-                    pancard: store.pancard ?? undefined,
-                    state: store.state,
-                    gstnumber: store.gstnumber ?? undefined,
-                    storeemail: store.email || "",
-                    whatsapp: store.whatsapp || "",
-                  });
-                  setEditStoreOpen(true);
-                }}
-              >
-                <Edit className="w-3 h-3 mr-1" />
-                Edit
-              </Button>
+              {!store.isDeleted ? (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setSelectedStore(store);
+                      setStoreFormData({
+                        storename: store.name,
+                        address: store.address || "",
+                        googlemaplink: store.googlemaplink || "",
+                        city: store.city,
+                        latitude: store.latitude ?? undefined,
+                        longitude: store.longitude ?? undefined,
+                        phone: store.phone || "",
+                        pancard: store.pancard ?? undefined,
+                        state: store.state,
+                        gstnumber: store.gstnumber ?? undefined,
+                        storeemail: store.email || "",
+                        whatsapp: store.whatsapp || "",
+                      });
+                      setEditStoreOpen(true);
+                    }}
+                  >
+                    <Edit className="w-3 h-3 mr-1" />
+                    Edit
+                  </Button>
+                  
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={() => handleDeleteStore(store.id)}
+                  >
+                    <Trash2 className="w-3 h-3 mr-1" />
+                    Delete
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => handleRestoreStore(store.id)}
+                >
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Restore
+                </Button>
+              )}
             </PermissionWrapper>
           </div>
         </div>
@@ -964,10 +1042,13 @@ const StoreManagement = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Button variant="outline" onClick={() => setFilterOpen(!filterOpen)}>
-          <Filter className="w-4 h-4 mr-2" />
-          Filter
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Show Deleted Toggle - Removed */}
+          <Button variant="outline" onClick={() => setFilterOpen(!filterOpen)}>
+            <Filter className="w-4 h-4 mr-2" />
+            Filter
+          </Button>
+        </div>
       </div>
 
       {/* Stores Grid */}

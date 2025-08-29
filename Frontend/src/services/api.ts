@@ -9,7 +9,7 @@ interface ApiResponse<T> {
 interface StoreData {
   storename: string;
   address: string;
-  googlemaplink: string;
+  googlemaplink?: string;
   city: string;
   latitude?: number;
   longitude?: number;
@@ -19,6 +19,11 @@ interface StoreData {
   gstnumber?: string;
   storeemail: string;
   whatsapp: string;
+  isDeleted?: boolean;
+  deletedAt?: Date | null;
+  deletedBy?: string | null;
+  status?: 'active' | 'inactive';
+  password?: string;
 }
 
 interface UserData {
@@ -71,7 +76,9 @@ class ApiService {
 
   // Store methods
   async getStores(): Promise<any[]> {
-    const response = await fetch(`${API_BASE_URL}/api/stores/getstores`, {
+    const url = `${API_BASE_URL}/api/stores/getstores`;
+      
+    const response = await fetch(url, {
       headers: this.getAuthHeaders(),
     });
     return this.handleResponse(response);
@@ -112,6 +119,14 @@ class ApiService {
 
   async getStoreUsers(storeId: string): Promise<any[]> {
     const response = await fetch(`${API_BASE_URL}/api/stores/${storeId}/users`, {
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+  
+  async restoreStore(id: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/stores/${id}/restore`, {
+      method: 'PUT',
       headers: this.getAuthHeaders(),
     });
     return this.handleResponse(response);
