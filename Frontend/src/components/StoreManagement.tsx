@@ -349,7 +349,7 @@ const StoreManagement = () => {
         createdDate: (updatedStore.createdAt || updatedStore.createdDate) 
           ? new Date(updatedStore.createdAt || updatedStore.createdDate).toISOString().split("T")[0]
           : new Date().toISOString().split("T")[0],
-        status: updatedStore.status,
+        status: updatedStore.status || 'active', // Ensure status is always set
         whatsapp: updatedStore.whatsapp,
         latitude: updatedStore.latitude,
         longitude: updatedStore.longitude,
@@ -511,8 +511,8 @@ const StoreManagement = () => {
                 </div>
               </div>
             </div>
-            <Badge className={getStatusBadge(store.status)}>
-              {store.status.toUpperCase()}
+            <Badge className={getStatusBadge(store.status || 'active')}>
+              {(store.status || 'active').toUpperCase()}
             </Badge>
           </div>
 
@@ -1053,8 +1053,14 @@ const StoreManagement = () => {
 
       {/* Stores Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredStores.map((store) => (
-          <StoreCard key={store.id} store={store} />
+        {filteredStores.map((store, index) => (
+          <StoreCard 
+            key={`store-${store.id || index}`}  
+            store={{
+              ...store,
+              status: store.status || 'active'  // Ensure status is never undefined
+            }} 
+          />
         ))}
       </div>
 
