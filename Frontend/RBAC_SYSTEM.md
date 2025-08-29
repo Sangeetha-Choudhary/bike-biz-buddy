@@ -1,7 +1,7 @@
-# BikeBiz CRM - Multi-Level Role Hierarchy System
+# 2Wheelserv.com - Multi-Level Role Hierarchy System
 
 ## Overview
-The BikeBiz CRM features a comprehensive three-tier role hierarchy system designed for multi-store operations. The system ensures proper delegation of authority from Global Admin → Store Admin → Sales Executive while maintaining strict data isolation between stores and appropriate access controls.
+The 2Wheelserv.com features a comprehensive three-tier role hierarchy system designed for multi-store operations. The system ensures proper delegation of authority from Global Admin → Store Admin → Sales Executive while maintaining strict data isolation between stores and appropriate access controls.
 
 ## Role Hierarchy & Permissions
 

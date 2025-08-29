@@ -30,6 +30,7 @@ import {
   CheckSquare,
   Lock
 } from "lucide-react";
+import WheelservLogo from "../../public/assets/Wheelserv.png";
 
 interface NavigationProps {
   currentPage: string;
@@ -234,11 +235,13 @@ const Navigation = ({ currentPage, onPageChange }: NavigationProps) => {
       {/* Header */}
       <div className="p-4 border-b">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <Package className="w-5 h-5 text-primary-foreground" />
+          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+            {/* <Package className="w-5 h-5 text-primary-foreground" /> */}
+            {/* 2Wheelserv logo */}
+            <img src={WheelservLogo} alt="2Wheelserv Logo" className="w-8 h-8 object-contain" />
           </div>
           <div>
-            <h2 className="font-bold">BikeBiz CRM</h2>
+            <h2 className="font-bold">2Wheelserv.com</h2>
             <p className="text-xs text-muted-foreground">{roleInfo.label}</p>
           </div>
         </div>

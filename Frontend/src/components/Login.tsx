@@ -61,7 +61,7 @@ const Login = () => {
     if (success) {
       toast({
         title: "Login Successful",
-        description: "Welcome to BikeBiz CRM!",
+        description: "Welcome to 2Wheelserv.com!",
       });
     } else {
       setError("Invalid email or password");
@@ -78,7 +78,7 @@ const Login = () => {
               <Package className="w-8 h-8 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-2xl font-bold">BikeBiz CRM</CardTitle>
+              <CardTitle className="text-2xl font-bold">2Wheelserv.com</CardTitle>
               <p className="text-muted-foreground">Sign in to your account</p>
             </div>
           </CardHeader>
@@ -156,7 +156,7 @@ const Login = () => {
         {/* Welcome Section */}
         <div className="space-y-6">
           <div className="text-center lg:text-left">
-            <h2 className="text-3xl font-bold mb-2">Welcome to BikeBiz CRM</h2>
+            <h2 className="text-3xl font-bold mb-2">Welcome to 2Wheelserv.com</h2>
             <p className="text-muted-foreground text-lg">
               Secure role-based access control system for bike dealership
               management

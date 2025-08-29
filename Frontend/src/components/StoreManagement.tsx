@@ -239,7 +239,7 @@ const StoreManagement = () => {
       setStores((prev) => [transformedStore, ...prev]);
       setAddStoreOpen(false);
       resetStoreForm();
-
+``
       toast({
         title: "Store Created Successfully!",
         description: `${transformedStore.name} has been created successfully.`,
@@ -506,7 +506,7 @@ const StoreManagement = () => {
                     {store.name}
                   </h4>
                   <p className="text-sm text-muted-foreground">
-                    {store.location}, {store.city}
+                    {store.city}, {store.state}
                   </p>
                 </div>
               </div>

@@ -3,30 +3,30 @@ import { body, param, query, validationResult } from 'express-validator';
 // User creation validation
 export const validateCreateUser = [
     body('username')
-        .trim()
         .notEmpty().withMessage('Username is required'),
     body('email')
-        .trim()
-        .notEmpty().withMessage('Email is required')
-        .isEmail({ allow_utf8_local_part: false, require_tld: true }) //ensuring use should not apply with domain other then (.com , .in ) and require TLD means not use of any unusual character
-        .withMessage('Invalid email address')   
-        .normalizeEmail(),   // //it should always be in lower case
+        .isEmail().withMessage('Please provide a valid email'),
     body('password')
-        .notEmpty().withMessage('Password is required')
-        .isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-        // .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).+$/)   //it should have at least one uppercase, one lowercase, and one special character
-        // .withMessage('Password must contain at least one uppercase, one lowercase, and one special character'),
+        .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
     body('role')
-        .notEmpty().withMessage('Role is required')
         .isIn(['global_admin', 'store_admin', 'sales_executive', 'procurement_admin', 'procurement_executive'])
         .withMessage('Invalid role'),
-    body('store')
-        .optional()
-        .isMongoId().withMessage('Store must be a valid ID'),
     body('phone')
-        .trim()
-        .notEmpty().withMessage('Phone number is required')
-        .matches(/^\+91[1-9][0-9]{9}$/).withMessage('Invalid phone number'),     //phone number should have country code +91 and 10 digits not starting with 0
+        .optional()
+        .custom(value => {
+            if (!value) return true;
+            // Either allow international format or just digits
+            if (/^\+\d{1,4}\d{10}$/.test(value) || /^\d{10}$/.test(value)) {
+                return true;
+            }
+            throw new Error('Invalid phone number');
+        }),
+    body('store')
+        .optional(),
+    body('department')
+        .optional(),
+    body('city')
+        .optional(),
 ];
 
 // User login validation

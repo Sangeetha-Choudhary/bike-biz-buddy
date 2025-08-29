@@ -28,19 +28,16 @@ export interface Store {
 
 export interface User {
   id: string;
-  email: string;
   name: string;
-  role: UserRole;
-  avatar?: string;
-  permissions: string[];
+  email: string;
+  role: string;
+  permissions?: string[];
   storeId?: string;
   storeName?: string;
-  stores?: Store[]; // For global admin
-  managedStore?: Store; // For store admin
   city?: string;
   department?: string;
-  managedCity?: string; // For procurement admin - city they manage
-  reportingTo?: string; // For procurement executive - reports to procurement admin
+  phone?: string;
+  managedCity?: string; // Add this field
 }
 
 export interface AuthContextType {
@@ -183,7 +180,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name: response.username,
         role: response.role as UserRole,
         permissions: ROLE_PERMISSIONS[response.role as UserRole] || [],
-        avatar: '/placeholder.svg',
+        // avatar: '/placeholder.svg',
         // Add any additional fields from response if available
         storeId: response.store?.id,
         storeName: response.store?.name,
@@ -243,7 +240,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hasRole = (role: UserRole | UserRole[]): boolean => {
     if (!user) return false;
     if (Array.isArray(role)) {
-      return role.includes(user.role);
+      return role.includes(user.role as UserRole);
     }
     return user.role === role;
   };

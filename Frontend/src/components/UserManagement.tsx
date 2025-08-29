@@ -20,13 +20,15 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-  DrawerFooter,
-} from "@/components/ui/drawer";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -58,12 +60,18 @@ import {
   Activity,
   AlertCircle,
   CheckCircle,
+  Briefcase,
 } from "lucide-react";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 
 interface UserFormData {
   name: string;
   email: string;
-
+  password: string;
   role:
     | "store_admin"
     | "sales_executive"
@@ -74,32 +82,38 @@ interface UserFormData {
   department: string;
   phone?: string;
   city: string;
-  managedCity?: string; // For procurement admin
-  reportingTo?: string; // For procurement executive
+  managedCity?: string;
+  reportingTo?: string;
 }
 
-// interface StoreFormData {
-//   name: string;
-//   location: string;
-//   address: string;
-//   phone: string;
-//   email: string;
-//   city: string;
-//   state: string;
-//   managerName: string;
-//   managerEmail: string;
-//   latitude: number;
-//   longitude: number;
-//   googleMapLink?: string;
-//   whatsappNumber: string;
-//   gstNumber?: string;
-//   panNumber?: string;
-// }
+// Add UserData interface to fix the error
+interface UserData {
+  username: string;
+  email: string;
+  password?: string;
+  role: "global_admin" | "store_admin" | "sales_executive" | "procurement_admin" | "procurement_executive";
+  store?: string;
+  phone?: string;
+  department?: string;
+  city?: string;
+}
+
+const getInitials = (name: string): string => {
+  if (!name) return '';
+  
+  return name
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .toUpperCase()
+    .substring(0, 2);
+};
 
 const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("");
   const [filterStore, setFilterStore] = useState("");
@@ -107,12 +121,13 @@ const UserManagement = () => {
   const [userDetailsOpen, setUserDetailsOpen] = useState(false);
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [editUserOpen, setEditUserOpen] = useState(false);
+  const [deleteUserDialogOpen, setDeleteUserDialogOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState("users");
 
   const [userFormData, setUserFormData] = useState<UserFormData>({
     name: "",
     email: "",
-
+    password: "",
     role: "sales_executive",
     storeId: "",
     storeName: "",
@@ -120,24 +135,6 @@ const UserManagement = () => {
     phone: "",
     city: "",
   });
-
-  // const [storeFormData, setStoreFormData] = useState<StoreFormData>({
-  //   name: "",
-  //   location: "",
-  //   address: "",
-  //   phone: "",
-  //   email: "",
-  //   city: "",
-  //   state: "",
-  //   managerName: "",
-  //   managerEmail: "",
-  //   latitude: 0,
-  //   longitude: 0,
-  //   googleMapLink: "",
-  //   whatsappNumber: "",
-  //   gstNumber: "",
-  //   panNumber: "",
-  // });
 
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -167,13 +164,14 @@ const UserManagement = () => {
     }
   }, [userFormData.role]);
 
-  // Load sample data
+  // Load data
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        loadUsersData();
-        loadStoresData();
+        // Load stores first, then users
+        await loadStoresData();
+        await loadUsersData();
       } finally {
         setIsLoading(false);
       }
@@ -183,33 +181,43 @@ const UserManagement = () => {
       loadData();
     }
   }, [user]);
-  // _id: user._id,
-  //       username: user.username,
-  //       email: user.email,
-  //       role: user.role,
-  //       redirectUrl: roleBasedRedirect[user.role] || "/dashboard",
-  //       token: generateToken(user._id),
+
   const loadUsersData = async () => {
     try {
       const usersData = await apiService.getUsers();
+      
       const formattedUsers: User[] = usersData.map((user: any) => ({
         id: user._id,
         name: user.username,
         email: user.email,
         role: user.role,
+        phone: user.phone || '',
         permissions: [], // Will be set based on role in frontend
-        storeId: user.store ? "1" : undefined,
-        storeName: user.store,
-        city: "Mumbai", // Default city
-        department:
-          user.role === "store_admin"
-            ? "Store Management"
-            : user.role === "sales_executive"
-            ? "Sales"
-            : user.role === "procurement_admin"
-            ? "Procurement"
-            : "Vehicle Acquisition",
+        storeId: user.store || '',
+        storeName: '',  // This will be populated if we can get store details
+        city: user.city || '',
+        department: user.department || getDefaultDepartment(user.role),
+        managedCity: user.role === 'procurement_admin' ? user.city : undefined,
       }));
+
+      // If we have store data, we can match store IDs to names
+      if (stores.length > 0) {
+        formattedUsers.forEach(user => {
+          if (user.storeId) {
+            const matchingStore = stores.find(store => store.id === user.storeId);
+            if (matchingStore) {
+              user.storeName = matchingStore.name;
+              user.city = matchingStore.city || user.city;
+            }
+          }
+        });
+      }
+
+      // Sort users with newest first (assuming newer users have larger IDs)
+      formattedUsers.sort((a, b) => {
+        // Sort by creation time (larger MongoDB IDs are newer)
+        return b.id.localeCompare(a.id);
+      });
 
       if (user?.role === "global_admin") {
         // Global admin sees all users
@@ -233,64 +241,61 @@ const UserManagement = () => {
     }
   };
 
-  const loadStoresData = () => {
-    const sampleStores: Store[] = [
-      {
-        id: "1",
-        name: "Mumbai Central Store",
-        location: "Mumbai Central",
-        address: "123 Dr. D.N. Road, Mumbai Central, Mumbai - 400008",
-        phone: "+91 22 2123 4567",
-        email: "mumbai@bikebiz.com",
-        city: "Mumbai",
-        state: "Maharashtra",
-        manager: "Rajesh Patel",
-        createdDate: "2024-01-01",
-        status: "active",
-      }, 
-      {
-        id: "2",
-        name: "Delhi Karol Bagh Store",
-        location: "Karol Bagh",
-        address: "456 Karol Bagh Market, New Delhi - 110005",
-        phone: "+91 11 2123 4567",
-        email: "delhi@bikebiz.com",
-        city: "Delhi",
-        state: "Delhi",
-        manager: "Amit Sharma",
-        createdDate: "2024-01-01",
-        status: "active",
-      },
-      {
-        id: "3",
-        name: "Bangalore Koramangala Store",
-        location: "Koramangala",
-        address: "789 Koramangala 4th Block, Bangalore - 560034",
-        phone: "+91 80 2123 4567",
-        email: "bangalore@bikebiz.com",
-        city: "Bangalore",
-        state: "Karnataka",
-        manager: "Karthik Reddy",
-        createdDate: "2024-01-01",
-        status: "active",
-      },
-    ];
+  const getDefaultDepartment = (role: string) => {
+    switch (role) {
+      case "store_admin": return "Store Management";
+      case "sales_executive": return "Lead Generation";
+      case "procurement_admin": return "Procurement Administration";
+      case "procurement_executive": return "Vehicle Procurement";
+      default: return "";
+    }
+  };
 
-    if (user?.role === "global_admin") {
-      setStores(sampleStores);
-    } else if (user?.role === "store_admin" && user?.managedStore) {
-      setStores([user.managedStore]);
-    } else {
-      setStores([]);
+  const loadStoresData = async () => {
+    try {
+      const storesData = await apiService.getStores();
+      
+      const formattedStores = storesData.map((store: any) => ({
+        id: store._id,
+        name: store.storename,
+        location: `${store.city}, ${store.state}`,
+        address: store.address,
+        phone: store.phone,
+        email: store.storeemail,
+        city: store.city,
+        state: store.state,
+        manager: store.manager || '',
+        createdDate: store.createdAt ? 
+          new Date(store.createdAt).toISOString().split("T")[0] : 
+          new Date().toISOString().split("T")[0],
+        status: store.status || 'active',
+      }));
+
+      if (user?.role === "global_admin") {
+        setStores(formattedStores);
+      } else if (user?.role === "store_admin" && user?.storeId) {
+        // Filter to only show this admin's store
+        const adminStore = formattedStores.filter(s => s.id === user.storeId);
+        setStores(adminStore);
+      } else {
+        setStores([]);
+      }
+    } catch (error) {
+      console.error("Error loading stores:", error);
+      toast({
+        title: "Error Loading Stores",
+        description: "Failed to load stores from database.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleAddUser = async () => {
-    // Validate required fields based on role
-    if (!userFormData.name || !userFormData.email) {
+    // Validate required fields
+    if (!userFormData.name || !userFormData.email || !userFormData.password) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields.",
+        description: "Please fill in all required fields including password.",
         variant: "destructive",
       });
       return;
@@ -298,33 +303,8 @@ const UserManagement = () => {
 
     // Role-specific validation
     if (
-      userFormData.role === "procurement_admin" &&
-      !userFormData.managedCity
-    ) {
-      toast({
-        title: "Missing Information",
-        description: "Please select a managed city for Procurement Admin.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (
-      userFormData.role === "procurement_executive" &&
-      !userFormData.reportingTo
-    ) {
-      toast({
-        title: "Missing Information",
-        description:
-          "Please select a reporting manager for Procurement Executive.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (
       (userFormData.role === "store_admin" ||
-        userFormData.role === "sales_executive") &&
+       userFormData.role === "sales_executive") &&
       !userFormData.storeId
     ) {
       toast({
@@ -336,23 +316,33 @@ const UserManagement = () => {
     }
 
     try {
-      // Create user data for API
-      const userData = {
+      setIsSubmitting(true);
+      
+      // Format the phone number to include +91 prefix if it doesn't have it
+      let formattedPhone = userFormData.phone || '';
+      if (formattedPhone && !formattedPhone.startsWith('+')) {
+        // If phone starts with numbers only, add +91 prefix
+        if (/^\d+$/.test(formattedPhone)) {
+          formattedPhone = `+91${formattedPhone}`;
+        }
+      }
+      
+      // Create user data for API with properly formatted phone
+      const userData: UserData = {
         username: userFormData.name,
         email: userFormData.email,
-        password: "default123", // Default password that user can change later
+        password: userFormData.password,
         role: userFormData.role,
-        store:
-          userFormData.role === "procurement_admin" ||
-          userFormData.role === "procurement_executive"
-            ? undefined
-            : userFormData.storeName,
+        store: userFormData.storeId || undefined,
+        phone: formattedPhone,
+        department: userFormData.department,
+        city: userFormData.city
       };
 
       // Call API to create user
       const response = await apiService.createUser(userData);
 
-      // Generate appropriate permissions based on role
+      // Generate permissions based on role (frontend only)
       let permissions: string[] = [];
       if (userFormData.role === "store_admin") {
         permissions = [
@@ -393,138 +383,161 @@ const UserManagement = () => {
         ];
       }
 
+      // Get store name from the selected store
+      let selectedStoreName = "";
+      let selectedStoreCity = userFormData.city;
+      if (userFormData.storeId) {
+        const selectedStore = stores.find(s => s.id === userFormData.storeId);
+        if (selectedStore) {
+          selectedStoreName = selectedStore.name;
+          selectedStoreCity = selectedStore.city || userFormData.city;
+        }
+      }
+
       const newUser: User = {
         id: response._id,
         name: userFormData.name,
         email: userFormData.email,
+        phone: formattedPhone,
         role: userFormData.role,
         permissions,
-        storeId:
-          userFormData.role === "procurement_admin" ||
-          userFormData.role === "procurement_executive"
-            ? undefined
-            : userFormData.storeId,
-        storeName:
-          userFormData.role === "procurement_admin" ||
-          userFormData.role === "procurement_executive"
-            ? undefined
-            : userFormData.storeName,
-        city: userFormData.city,
+        storeId: userFormData.storeId,
+        storeName: selectedStoreName,
+        city: selectedStoreCity,
         department: userFormData.department,
-        managedCity:
-          userFormData.role === "procurement_admin"
-            ? userFormData.managedCity
-            : undefined,
-        reportingTo:
-          userFormData.role === "procurement_executive"
-            ? userFormData.reportingTo
-            : undefined,
+        managedCity: userFormData.role === 'procurement_admin' ? userFormData.city : undefined,
       };
 
       setUsers((prev) => [newUser, ...prev]);
       setAddUserOpen(false);
       resetUserForm();
 
-      const locationText =
-        userFormData.role === "procurement_admin"
-          ? userFormData.managedCity
-          : userFormData.role === "procurement_executive"
-          ? "procurement team"
-          : userFormData.storeName;
-
       toast({
         title: "User Created Successfully!",
-        description: `${
-          newUser.name
-        } has been added as a ${userFormData.role.replace(
-          "_",
-          " "
-        )} for ${locationText}. They can login with email: ${
-          userFormData.email
-        } and password: default123`,
+        description: `${newUser.name} has been added as a ${userFormData.role.replace("_", " ")}.`,
       });
     } catch (error) {
       console.error("Error creating user:", error);
       toast({
         title: "Error Creating User",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to create user. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to create user. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // const handleAddStoreWithAdmin = () => {
-  //   if (
-  //     !storeFormData.name ||
-  //     !storeFormData.city ||
-  //     !storeFormData.managerName ||
-  //     !storeFormData.managerEmail
-  //   ) {
-  //     toast({
-  //       title: "Missing Information",
-  //       description: "Please fill in all required fields.",
-  //       variant: "destructive",
-  //     });
-  //     return;
-  //   }
+  const handleEditUser = async () => {
+    if (!selectedUser) return;
+    
+    if (!userFormData.name || !userFormData.email) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  //   const storeId = Date.now().toString();
+    try {
+      setIsSubmitting(true);
+      
+      // Format the phone number to include +91 prefix if it doesn't have it
+      let formattedPhone = userFormData.phone || '';
+      if (formattedPhone && !formattedPhone.startsWith('+')) {
+        // If phone starts with numbers only, add +91 prefix
+        if (/^\d+$/.test(formattedPhone)) {
+          formattedPhone = `+91${formattedPhone}`;
+        }
+      }
+      
+      // Create update data with properly formatted phone
+      const updateData: Partial<UserData> = {
+        username: userFormData.name,
+        email: userFormData.email,
+        role: userFormData.role,
+        store: userFormData.storeId || undefined,
+        phone: formattedPhone, // Use the formatted phone number
+        department: userFormData.department,
+        city: userFormData.city
+      };
+      
+      // Only include password if it was changed
+      if (userFormData.password) {
+        updateData.password = userFormData.password;
+      }
 
-  //   // Create the store
-  //   const newStore: Store = {
-  //     id: storeId,
-  //     name: storeFormData.name,
-  //     location: storeFormData.location,
-  //     address: storeFormData.address,
-  //     phone: storeFormData.phone,
-  //     email: storeFormData.email,
-  //     city: storeFormData.city,
-  //     state: storeFormData.state,
-  //     manager: storeFormData.managerName,
-  //     createdDate: new Date().toISOString().split("T")[0],
-  //     status: "active",
-  //   };
+      // Call API to update user
+      const response = await apiService.updateUser(selectedUser.id, updateData);
+      
+      // Update the user in the local state
+      const updatedUser: User = {
+        ...selectedUser,
+        name: userFormData.name,
+        email: userFormData.email,
+        phone: userFormData.phone || '',
+        role: userFormData.role,
+        storeId: userFormData.storeId,
+        storeName: userFormData.storeName,
+        city: userFormData.city,
+        department: userFormData.department,
+      };
 
-  //   // Create the store admin user
-  //   const newStoreAdmin: User = {
-  //     id: (Date.now() + 1).toString(),
-  //     name: storeFormData.managerName,
-  //     email: storeFormData.managerEmail,
-  //     role: "store_admin",
-  //     permissions: [
-  //       "manage_store",
-  //       "manage_store_users",
-  //       "manage_leads",
-  //       "manage_inventory",
-  //       "match_engine",
-  //       "view_analytics",
-  //     ],
-  //     storeId: storeId,
-  //     storeName: storeFormData.name,
-  //     city: storeFormData.city,
-  //     department: "Store Management",
-  //     managedStore: newStore,
-  //   };
+      setUsers(prev => prev.map(u => u.id === selectedUser.id ? updatedUser : u));
+      setEditUserOpen(false);
+      
+      toast({
+        title: "User Updated Successfully!",
+        description: `${updatedUser.name}'s information has been updated.`,
+      });
+    } catch (error) {
+      console.error("Error updating user:", error);
+      toast({
+        title: "Error Updating User",
+        description: error instanceof Error ? error.message : "Failed to update user. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-  //   setStores((prev) => [newStore, ...prev]);
-  //   setUsers((prev) => [newStoreAdmin, ...prev]);
-  //   setAddStoreOpen(false);
-  //   resetStoreForm();
-
-  //   toast({
-  //     title: "Store & Admin Created Successfully!",
-  //     description: `${newStore.name} has been created with ${newStoreAdmin.name} as Store Admin.`,
-  //   });
-  // };
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      // Call API to delete user
+      await apiService.deleteUser(selectedUser.id);
+      
+      // Remove user from the local state
+      setUsers(prev => prev.filter(u => u.id !== selectedUser.id));
+      setDeleteUserDialogOpen(false);
+      setSelectedUser(null);
+      
+      toast({
+        title: "User Deleted Successfully!",
+        description: `${selectedUser.name} has been removed from the system.`,
+      });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast({
+        title: "Error Deleting User",
+        description: error instanceof Error ? error.message : "Failed to delete user. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const resetUserForm = () => {
     setUserFormData({
       name: "",
       email: "",
-
+      password: "",
       role: "sales_executive",
       storeId: "",
       storeName: "",
@@ -536,36 +549,20 @@ const UserManagement = () => {
     });
   };
 
-  // const resetStoreForm = () => {
-  //   setStoreFormData({
-  //     name: "",
-  //     location: "",
-  //     address: "",
-  //     phone: "",
-  //     email: "",
-  //     city: "",
-  //     state: "",
-  //     managerName: "",
-  //     managerEmail: "",
-  //     latitude: 0,
-  //     longitude: 0,
-  //     googleMapLink: "",
-  //     whatsappNumber: "",
-  //     gstNumber: "",
-  //     panNumber: "",
-  //   });
-  // };
-
   const getRoleBadge = (role: string) => {
     const variants = {
       global_admin: "bg-red-100 text-red-800 border-red-200",
       store_admin: "bg-blue-100 text-blue-800 border-blue-200",
       sales_executive: "bg-green-100 text-green-800 border-green-200",
+      procurement_admin: "bg-purple-100 text-purple-800 border-purple-200",
+      procurement_executive: "bg-orange-100 text-orange-800 border-orange-200",
     };
     const labels = {
       global_admin: "Global Admin",
       store_admin: "Store Admin",
       sales_executive: "Sales Executive",
+      procurement_admin: "Procurement Admin",
+      procurement_executive: "Procurement Executive",
     };
     return {
       className:
@@ -574,23 +571,11 @@ const UserManagement = () => {
     };
   };
 
-  const getDepartmentBadge = (department: string) => {
-    const variants = {
-      "Store Management": "bg-purple-100 text-purple-800 border-purple-200",
-      "Lead Generation": "bg-blue-100 text-blue-800 border-blue-200",
-      "Sales & Fulfillment": "bg-green-100 text-green-800 border-green-200",
-      "Customer Service": "bg-orange-100 text-orange-800 border-orange-200",
-    };
-    return (
-      variants[department as keyof typeof variants] ||
-      "bg-gray-100 text-gray-800 border-gray-200"
-    );
-  };
-
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.phone && user.phone.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesRole = !filterRole || user.role === filterRole;
     const matchesStore = !filterStore || user.storeId === filterStore;
     return matchesSearch && matchesRole && matchesStore;
@@ -598,88 +583,109 @@ const UserManagement = () => {
 
   const UserCard = ({ user: userData }: { user: User }) => {
     const roleBadge = getRoleBadge(userData.role);
+    const initials = getInitials(userData.name);
+    
+    // Choose avatar background color based on role
+    const getAvatarClass = (role: string) => {
+      switch (role) {
+        case "global_admin": return "bg-red-100 text-red-800";
+        case "store_admin": return "bg-blue-100 text-blue-800";
+        case "sales_executive": return "bg-green-100 text-green-800";
+        case "procurement_admin": return "bg-purple-100 text-purple-800";
+        case "procurement_executive": return "bg-orange-100 text-orange-800";
+        default: return "bg-primary/10 text-primary";
+      }
+    };
+    
     return (
-      <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
-        <CardContent className="p-4">
-          <div className="space-y-3">
+      <Card className="border border-border hover:border-primary/20 transition-colors">
+        <CardContent className="p-5">
+          <div className="space-y-4">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                  {userData.role === "global_admin" && (
-                    <Crown className="w-6 h-6 text-red-600" />
-                  )}
-                  {userData.role === "store_admin" && (
-                    <Shield className="w-6 h-6 text-blue-600" />
-                  )}
-                  {userData.role === "sales_executive" && (
-                    <TrendingUp className="w-6 h-6 text-green-600" />
-                  )}
-                </div>
-                <div>
-                  <h4 className="font-semibold text-foreground">
-                    {userData.name}
-                  </h4>
-                  <p className="text-sm text-muted-foreground">
-                    {userData.email}
-                  </p>
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src="" alt={userData.name} />
+                  <AvatarFallback className={getAvatarClass(userData.role)}>
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <h3 className="font-semibold text-lg">{userData.name}</h3>
+                  <p className="text-sm text-muted-foreground">{userData.email}</p>
                 </div>
               </div>
               <Badge className={roleBadge.className}>{roleBadge.label}</Badge>
             </div>
-
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <Building className="w-4 h-4 text-muted-foreground" />
-                <span>{userData.storeName}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-muted-foreground" />
-                <span>{userData.city}</span>
-              </div>
+            
+            <div className="grid grid-cols-1 gap-1">
+              {userData.phone && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <span className="text-muted-foreground">{userData.phone}</span>
+                </div>
+              )}
+              
+              {userData.storeName && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Building className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <span className="text-muted-foreground">{userData.storeName}</span>
+                </div>
+              )}
+              
+              {userData.city && (
+                <div className="flex items-center gap-2 text-sm">
+                  <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <span className="text-muted-foreground">{userData.city}</span>
+                </div>
+              )}
+              
               {userData.department && (
-                <div className="flex items-center gap-2">
-                  <Settings className="w-4 h-4 text-muted-foreground" />
-                  <Badge className={getDepartmentBadge(userData.department)}>
-                    {userData.department}
-                  </Badge>
+                <div className="flex items-center gap-2 text-sm">
+                  <Briefcase className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <span className="text-muted-foreground">{userData.department}</span>
                 </div>
               )}
             </div>
-
+            
             <div className="flex gap-2 pt-2">
-              {/* <Button
-                size="sm"
-                variant="outline"
-                className="flex-1"
-                onClick={() => {
-                  setSelectedUser(userData);
-                  setUserDetailsOpen(true);
-                }}
-              >
-                <Eye className="w-3 h-3 mr-1" />
-                View Details
-              </Button> */}
-              <PermissionWrapper permission="all">
+              <PermissionWrapper permission="manage_store_users">
                 <Button
                   size="sm"
                   variant="outline"
+                  className="flex-1"
                   onClick={() => {
                     setSelectedUser(userData);
                     setUserFormData({
                       name: userData.name,
                       email: userData.email,
-
+                      password: "", // Empty password field for edit form
                       role: userData.role as any,
                       storeId: userData.storeId || "",
                       storeName: userData.storeName || "",
                       department: userData.department || "",
-                      phone: "",
+                      phone: userData.phone || "",
                       city: userData.city || "",
                     });
                     setEditUserOpen(true);
                   }}
                 >
-                  <Edit className="w-3 h-3" />
+                  <Edit className="w-3 h-3 mr-1" />
+                  Edit
+                </Button>
+              </PermissionWrapper>
+              
+              <PermissionWrapper permission="manage_store_users">
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={() => {
+                    setSelectedUser(userData);
+                    setDeleteUserDialogOpen(true);
+                  }}
+                >
+                  <Trash2 className="w-3 h-3 mr-1" />
+                  Delete
                 </Button>
               </PermissionWrapper>
             </div>
@@ -722,23 +728,11 @@ const UserManagement = () => {
           </div>
           <p className="text-sm lg:text-base text-muted-foreground">
             {user?.role === "global_admin"
-              ? "Manage users and stores across the entire system"
+              ? "Manage users across the entire system"
               : "Manage your store team and sales executives"}
           </p>
         </div>
         <div className="flex gap-2">
-          {/* <PermissionWrapper permission="all">
-            <Button
-              onClick={() => {
-                resetStoreForm();
-                setAddStoreOpen(true);
-              }}
-              variant="outline"
-            >
-              <Building className="w-4 h-4 mr-2" />
-              Add Store & Admin
-            </Button>
-          </PermissionWrapper> */}
           <PermissionWrapper permission="manage_store_users">
             <Button
               onClick={() => {
@@ -766,7 +760,7 @@ const UserManagement = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
-            placeholder="Search users by name or email..."
+            placeholder="Search users by name, email or phone..."
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -785,7 +779,7 @@ const UserManagement = () => {
           <option value="procurement_admin">Procurement Admin</option>
           <option value="procurement_executive">Procurement Executive</option>
         </select>
-        {user?.role === "global_admin" && (
+        {user?.role === "global_admin" && stores.length > 0 && (
           <select
             aria-label="Filter by store"
             title="Filter by store"
@@ -812,7 +806,11 @@ const UserManagement = () => {
 
       {filteredUsers.length === 0 && (
         <div className="text-center py-12">
-          <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <Avatar className="h-16 w-16 mx-auto mb-4">
+            <AvatarFallback className="bg-muted">
+              <Users className="w-8 h-8 text-muted-foreground" />
+            </AvatarFallback>
+          </Avatar>
           <h3 className="text-lg font-semibold mb-2">No Users Found</h3>
           <p className="text-muted-foreground mb-4">
             {searchTerm
@@ -850,7 +848,7 @@ const UserManagement = () => {
                       name: e.target.value,
                     }))
                   }
-                  placeholder="Priya Sharma"
+                  placeholder="John Smith"
                 />
               </div>
               <div className="space-y-2">
@@ -865,36 +863,52 @@ const UserManagement = () => {
                       email: e.target.value,
                     }))
                   }
-                  placeholder="priya@bikebiz.com"
+                  placeholder="john@bikebiz.com"
                 />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="userPhone">Phone/Contact Number</Label>
+                <Label htmlFor="userPhone">
+                  Phone/Contact Number
+                  <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 rounded-l-md border border-input bg-muted text-sm text-muted-foreground">
+                  +91
+                </span>
                 <Input
                   id="userPhone"
                   type="tel"
                   value={userFormData.phone}
+                  className="rounded-l-none"
                   onChange={(e) =>
                     setUserFormData((prev) => ({
                       ...prev,
                       phone: e.target.value,
                     }))
                   }
-                  placeholder="Enter phone/contact number"
+                  placeholder="9876543210"
+                  pattern="^[6-9]\d{9}$"
+                  required
+                />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="userPassword">Password *</Label>
+                <Input
+                  id="userPassword"
+                  type="password"
+                  value={userFormData.password}
+                  onChange={(e) => 
+                    setUserFormData(prev => ({ 
+                      ...prev, 
+                      password: e.target.value 
+                    }))
+                  }
+                  placeholder="Enter secure password"
                 />
               </div>
-              {/* <div className="space-y-2"> */}
-              {/* <Label htmlFor="userPassword">Password</Label>
-                  <Input
-                    id="userPassword"
-                    type="password"
-                    value={userFormData.password || ''}
-                    onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
-                    placeholder="Enter password"
-                  /> */}
-              {/* </div> */}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -924,10 +938,9 @@ const UserManagement = () => {
                     user?.role === "global_admin") && (
                     <option value="sales_executive">Sales Executive</option>
                   )}
-                  {user?.role === "procurement_admin" && (
-                    <option value="procurement_executive">
-                      Procurement Executive
-                    </option>
+                  {(user?.role === "procurement_admin" ||
+                    user?.role === "global_admin") && (
+                    <option value="procurement_executive">Procurement Executive</option>
                   )}
                 </select>
               </div>
@@ -974,7 +987,7 @@ const UserManagement = () => {
                       .filter((u) => u.role === "procurement_admin")
                       .map((admin) => (
                         <option key={admin.id} value={admin.id}>
-                          {admin.name} - {admin.managedCity}
+                          {admin.name} - {admin.managedCity || admin.city || 'Unknown'}
                         </option>
                       ))}
                   </select>
@@ -1015,15 +1028,242 @@ const UserManagement = () => {
             <Button variant="outline" onClick={() => setAddUserOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddUser}>
-              <UserPlus className="w-4 h-4 mr-2" />
-              Create User
+            <Button 
+              onClick={handleAddUser} 
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <span className="flex items-center">
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
+                  Creating...
+                </span>
+              ) : (
+                <>
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Create User
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Add Store & Admin Dialog */}
+      {/* Edit User Dialog */}
+      <Dialog open={editUserOpen} onOpenChange={setEditUserOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Update user information and permissions.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="editUserName">Full Name *</Label>
+                <Input
+                  id="editUserName"
+                  value={userFormData.name}
+                  onChange={(e) =>
+                    setUserFormData((prev) => ({
+                      ...prev,
+                      name: e.target.value,
+                    }))
+                  }
+                  placeholder="Full name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editUserEmail">Email *</Label>
+                <Input
+                  id="editUserEmail"
+                  type="email"
+                  value={userFormData.email}
+                  onChange={(e) =>
+                    setUserFormData((prev) => ({
+                      ...prev,
+                      email: e.target.value,
+                    }))
+                  }
+                  placeholder="Email address"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="editUserPhone">
+                  Phone/Contact Number
+                   <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 rounded-l-md border border-input bg-muted text-sm text-muted-foreground">
+                  +91
+                </span>
+                <Input
+                  id="editUserPhone"
+                  type="tel"
+                  value={userFormData.phone}
+                  className="rounded-l-none"
+                  onChange={(e) =>
+                    setUserFormData((prev) => ({
+                      ...prev,
+                      phone: e.target.value,
+                    }))
+                  }
+                  placeholder="9876543210"
+                  pattern="^[6-9]\d{9}$"
+                  required
+                />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editUserPassword">Password (leave blank to keep unchanged)</Label>
+                <Input
+                  id="editUserPassword"
+                  type="password"
+                  value={userFormData.password}
+                  onChange={(e) => 
+                    setUserFormData(prev => ({ 
+                      ...prev, 
+                      password: e.target.value 
+                    }))
+                  }
+                  placeholder="New password"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="editUserRole">Role *</Label>
+                <select
+                  id="editUserRole"
+                  title="Select role"
+                  value={userFormData.role}
+                  onChange={(e) =>
+                    setUserFormData((prev) => ({
+                      ...prev,
+                      role: e.target.value as any,
+                    }))
+                  }
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {user?.role === "global_admin" && (
+                    <>
+                      <option value="store_admin">Store Admin</option>
+                      <option value="procurement_admin">Procurement Admin</option>
+                    </>
+                  )}
+                  {(user?.role === "store_admin" || user?.role === "global_admin") && (
+                    <option value="sales_executive">Sales Executive</option>
+                  )}
+                  {(user?.role === "procurement_admin" || user?.role === "global_admin") && (
+                    <option value="procurement_executive">Procurement Executive</option>
+                  )}
+                </select>
+              </div>
+              {userFormData.role === "store_admin" || userFormData.role === "sales_executive" ? (
+                <div className="space-y-2">
+                  <Label htmlFor="editUserStore">Store *</Label>
+                  <select
+                    id="editUserStore"
+                    title="Select store"
+                    value={userFormData.storeId}
+                    onChange={(e) => {
+                      const store = stores.find((s) => s.id === e.target.value);
+                      setUserFormData((prev) => ({
+                        ...prev,
+                        storeId: e.target.value,
+                        storeName: store?.name || "",
+                        city: store?.city || "",
+                      }));
+                    }}
+                    disabled={user?.role === "store_admin"}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">Select store</option>
+                    {stores.map((store) => (
+                      <option key={store.id} value={store.id}>
+                        {store.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="editUserCity">City</Label>
+                  <Input
+                    id="editUserCity"
+                    value={userFormData.city}
+                    onChange={(e) =>
+                      setUserFormData((prev) => ({
+                        ...prev,
+                        city: e.target.value,
+                      }))
+                    }
+                    placeholder="User's city"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditUserOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleEditUser}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <span className="flex items-center">
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
+                  Updating...
+                </span>
+              ) : (
+                <>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Update User
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete User Confirmation Dialog */}
+      <AlertDialog open={deleteUserDialogOpen} onOpenChange={setDeleteUserDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action will delete user {selectedUser?.name}. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteUserDialogOpen(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-destructive text-destructive-foreground"
+              onClick={handleDeleteUser}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <span className="flex items-center">
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
+                  Deleting...
+                </span>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete User
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

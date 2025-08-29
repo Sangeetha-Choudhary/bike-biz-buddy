@@ -26,12 +26,16 @@ interface StoreData {
   password?: string;
 }
 
+// Update the UserData interface to match what you're using
 interface UserData {
-  name: string;
+  username: string;
   email: string;
-  department: string;
+  password?: string;
+  role: "global_admin" | "store_admin" | "sales_executive" | "procurement_admin" | "procurement_executive";
+  store?: string;
   phone?: string;
-  storeId?: string;
+  department?: string; 
+  city?: string;
 }
 
 class ApiService {
@@ -134,14 +138,14 @@ class ApiService {
 
   // User methods
   async getUsers(): Promise<any[]> {
-    const response = await fetch(`${API_BASE_URL}/api/users`, {
+    const response = await fetch(`${API_BASE_URL}/api/users/getusers`, {
       headers: this.getAuthHeaders(),
     });
     return this.handleResponse(response);
   }
 
   async createUser(userData: UserData): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/api/users`, {
+    const response = await fetch(`${API_BASE_URL}/api/users/createuser`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
       body: JSON.stringify(userData),
