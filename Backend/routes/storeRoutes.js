@@ -8,7 +8,7 @@ const router = express.Router();
 router.post('/createstore', protect, checkPermission('manage_store'), createStore);
 
 // Only global_admin (has "*") can list all stores
-router.get('/getStores', protect, checkPermission('manage_store'), getStores);
+router.get('/getstores', protect, checkPermission('manage_store'), getStores);
 // router.get('/:id', protect, checkPermission('read_own', 'store'), getSingleStore);
 
 export default router;

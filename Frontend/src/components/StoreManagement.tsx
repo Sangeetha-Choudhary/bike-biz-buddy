@@ -59,21 +59,23 @@ import {
   Clock,
   Star,
   Activity,
+  Loader2,
 } from "lucide-react";
+import StateCitySelector from '@/components/ui/StateCitySelector';
+import apiService from '@/services/api';
 
 interface StoreFormData {
   storename: string;
   address: string;
   googlemaplink: string;
   city: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   phone: string;
-  pancard: string;
+  pancard?: string;
   state: string;
-  gstnumber: string;
-  storeadminname: string;
-  storeadminemail: string;
+  gstnumber?: string;
+  storeemail: string;
   whatsapp: string;
 }
 
@@ -95,21 +97,20 @@ const StoreManagement = () => {
   const [editStoreOpen, setEditStoreOpen] = useState(false);
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState("overview");
+  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [storeFormData, setStoreFormData] = useState<StoreFormData>({
     storename: "",
     address: "",
     googlemaplink: "",
     city: "",
-    latitude: 0,
-    longitude: 0,
     phone: "",
-    pancard: "",
     state: "",
-    gstnumber: "",
-    storeadminname: "",
-    storeadminemail: "",
+    storeemail: "",
     whatsapp: "",
+
+    // latitude, longitude, gstnumber, pancard are now optional
   });
 
   const [userFormData, setUserFormData] = useState<UserFormData>({
@@ -129,64 +130,80 @@ const StoreManagement = () => {
     loadUsersData();
   }, [user]);
 
-  const loadStoresData = () => {
-    // For global admin, show all stores
-    if (user?.role === "global_admin" && user?.stores) {
-      setStores(user.stores);
-    }
-    // For store admin, show only their store
-    else if (user?.role === "store_admin" && user?.managedStore) {
-      setStores([user.managedStore]);
-    } else {
-      setStores([]);
-    }
-  };
+  const loadStoresData = async () => {
+    try {
+      setLoading(true);
+      const storesData = await apiService.getStores();
 
-  const loadUsersData = () => {
-    // Simulate loading users for the store
-    const sampleUsers: User[] = [
-      {
-        id: "5",
-        name: "Priya Sharma",
-        email: "sales1@mumbai.com",
-        role: "sales_executive",
-        permissions: ["manage_leads", "view_inventory"],
-        storeId: "1",
-        storeName: "Mumbai Central Store",
-        city: "Mumbai",
-        department: "Lead Generation",
-      },
-      {
-        id: "6",
-        name: "Rohit Kumar",
-        email: "sales2@mumbai.com",
-        role: "sales_executive",
-        permissions: ["manage_leads", "view_inventory"],
-        storeId: "1",
-        storeName: "Mumbai Central Store",
-        city: "Mumbai",
-        department: "Sales & Fulfillment",
-      },
-    ];
+      // Transform API response to match frontend interface
+      const transformedStores = storesData.map((store: any) => ({
+        id: store._id,
+        name: store.storename,
+        location: `${store.city}, ${store.state}`, 
+        address: store.address,
+        phone: store.phone,
+        whatsapp: store.whatsapp,
+        email: store.storeemail || store.email,
+        googlemaplink: store.googlemaplink,
+        city: store.city,
+        state: store.state,
+        latitude: store.latitude,
+        longitude: store.longitude,
+        gstnumber: store.gstnumber,
+        pancard: store.pancard,
+        manager: store.manager?.name || "",
+        createdDate: new Date(store.createdAt || store.createdDate).toISOString().split("T")[0],
+        status: store.status || "active",
+      }));
 
-    if (user?.role === "store_admin") {
-      // Filter users for current store
-      const currentStoreUsers = sampleUsers.filter(
-        (u) => u.storeId === user.storeId
-      );
-      setStoreUsers(currentStoreUsers);
-    } else if (user?.role === "global_admin") {
-      // Global admin sees all users
-      setStoreUsers(sampleUsers);
+      setStores(transformedStores);
+    } catch (error) {
+      console.error('Error loading stores:', error);
+      toast({
+        title: "Error Loading Stores",
+        description: error instanceof Error ? error.message : "Failed to load stores",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleAddStoreWithAdmin = () => {
+  const loadUsersData = async () => {
+    try {
+      // Load users for the current store
+      if (user?.storeId) {
+        const usersData = await apiService.getStoreUsers(user.storeId);
+
+        // Transform API response to match frontend interface
+        const transformedUsers = usersData.map((userData: any) => ({
+          id: userData._id,
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
+          permissions: userData.permissions || [],
+          storeId: userData.storeId,
+          storeName: userData.storeName || "",
+          city: userData.city || "",
+          department: userData.department || "Sales & Fulfillment",
+        }));
+
+        setStoreUsers(transformedUsers);
+      }
+    } catch (error) {
+      console.error('Error loading users:', error);
+    }
+  };
+
+  const handleAddStoreWithAdmin = async () => {
     if (
       !storeFormData.storename ||
       !storeFormData.city ||
-      !storeFormData.storeadminname ||
-      !storeFormData.storeadminemail
+      !storeFormData.state ||
+      !storeFormData.phone ||
+      !storeFormData.whatsapp ||
+      !storeFormData.address ||
+      !storeFormData.storeemail
     ) {
       toast({
         title: "Missing Information",
@@ -195,53 +212,48 @@ const StoreManagement = () => {
       });
       return;
     }
-    const storeId = Date.now().toString();
-    const newStore: Store = {
-      id: storeId,
-      name: storeFormData.storename,
-      location: storeFormData.city,
-      address: storeFormData.address,
-      phone: storeFormData.phone,
-      email: storeFormData.storeadminemail,
-      googlemaplink: storeFormData.googlemaplink,
-      city: storeFormData.city,
-      state: storeFormData.state,
-      manager: storeFormData.storeadminname,
-      createdDate: new Date().toISOString().split("T")[0],
-      status: "active",
-    };
-    const newStoreAdmin: User = {
-      id: (Date.now() + 1).toString(),
-      name: storeFormData.storeadminname,
-      email: storeFormData.storeadminemail,
-      role: "store_admin",
-      permissions: [
-        "manage_store",
-        "manage_store_users",
-        "manage_leads",
-        "manage_inventory",
-        "match_engine",
-        "view_analytics",
-      ],
-      storeId,
-      storeName: storeFormData.storename,
-      city: storeFormData.city,
-      department: "Store Management",
-      managedStore: newStore,
-    };
-    setStores((prev) => [newStore, ...prev]);
-    setStoreUsers((prev) => [newStoreAdmin, ...prev]);
-    setAddStoreOpen(false);
-    resetStoreForm();
-    toast({
-      title: "Store & Admin Created Successfully!",
-      description: `${newStore.name} has been created with ${newStoreAdmin.name} as Store Admin.`,
-    });
+
+    try {
+      setIsSubmitting(true);
+      const newStore = await apiService.createStore(storeFormData);
+
+      // Transform response and add to stores list
+      const transformedStore: Store = {
+        id: newStore._id,
+        name: newStore.storename || newStore.name,
+        location: `${newStore.city}, ${newStore.state}`,
+        address: newStore.address,
+        phone: newStore.phone,
+        email: newStore.storeemail || newStore.email,
+        googlemaplink: newStore.googlemaplink,
+        city: newStore.city,
+        state: newStore.state,
+        manager: newStore.manager?.name || "",
+        createdDate: new Date(newStore.createdAt || newStore.createdDate).toISOString().split("T")[0],
+        status: newStore.status || "active",
+      };
+
+      setStores((prev) => [transformedStore, ...prev]);
+      setAddStoreOpen(false);
+      resetStoreForm();
+
+      toast({
+        title: "Store Created Successfully!",
+        description: `${transformedStore.name} has been created successfully.`,
+      });
+    } catch (error) {
+      console.error('Error creating store:', error);
+      toast({
+        title: "Error Creating Store",
+        description: error instanceof Error ? error.message : "Failed to create store",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  // Deprecated simple add; unified into handleAddStoreWithAdmin
-
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
     if (!userFormData.name || !userFormData.email) {
       toast({
         title: "Missing Information",
@@ -251,31 +263,112 @@ const StoreManagement = () => {
       return;
     }
 
-    const newUser: User = {
-      id: Date.now().toString(),
-      name: userFormData.name,
-      email: userFormData.email,
-      role: "sales_executive",
-      permissions: [
-        "manage_leads",
-        "view_inventory",
-        "match_engine",
-        "create_sales",
-      ],
-      storeId: user?.storeId || selectedStore?.id || "",
-      storeName: user?.storeName || selectedStore?.name || "",
-      city: user?.city || selectedStore?.city || "",
-      department: userFormData.department,
-    };
+    try {
+      setIsSubmitting(true);
 
-    setStoreUsers((prev) => [newUser, ...prev]);
-    setAddUserOpen(false);
-    resetUserForm();
+      const userData = {
+        ...userFormData,
+        storeId: user?.storeId || selectedStore?.id || "",
+      };
 
-    toast({
-      title: "Sales Executive Added!",
-      description: `${newUser.name} has been added to ${newUser.storeName}.`,
-    });
+      const newUser = await apiService.createUser(userData);
+
+      // Transform response and add to users list
+      const transformedUser: User = {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        permissions: newUser.permissions || [],
+        storeId: newUser.storeId,
+        storeName: newUser.storeName || "",
+        city: newUser.city || "",
+        department: newUser.department,
+      };
+
+      setStoreUsers((prev) => [transformedUser, ...prev]);
+      setAddUserOpen(false);
+      resetUserForm();
+
+      toast({
+        title: "Sales Executive Added!",
+        description: `${transformedUser.name} has been added to the store.`,
+      });
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast({
+        title: "Error Adding User",
+        description: error instanceof Error ? error.message : "Failed to add user",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditStore = async () => {
+    if (!selectedStore) return;
+
+    try {
+      setIsSubmitting(true);
+      const updatedStore = await apiService.updateStore(selectedStore.id, storeFormData);
+
+      // Transform response and update stores list
+      const transformedStore: Store = {
+        id: updatedStore._id,
+        name: updatedStore.name,
+        location: updatedStore.location,
+        address: updatedStore.address,
+        phone: updatedStore.phone,
+        email: updatedStore.email,
+        googlemaplink: updatedStore.googlemaplink,
+        city: updatedStore.city,
+        state: updatedStore.state,
+        manager: updatedStore.manager?.name || "",
+        createdDate: new Date(updatedStore.createdDate).toISOString().split("T")[0],
+        status: updatedStore.status,
+      };
+
+      setStores(prev => prev.map(store =>
+        store.id === selectedStore.id ? transformedStore : store
+      ));
+
+      setEditStoreOpen(false);
+      resetStoreForm();
+
+      toast({
+        title: "Store Updated Successfully!",
+        description: `${transformedStore.name} has been updated.`,
+      });
+    } catch (error) {
+      console.error('Error updating store:', error);
+      toast({
+        title: "Error Updating Store",
+        description: error instanceof Error ? error.message : "Failed to update store",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteStore = async (storeId: string) => {
+    try {
+      await apiService.deleteStore(storeId);
+      setStores(prev => prev.filter(store => store.id !== storeId));
+
+      toast({
+        title: "Store Deleted",
+        description: "Store has been deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting store:', error);
+      toast({
+        title: "Error Deleting Store",
+        description: error instanceof Error ? error.message : "Failed to delete store",
+        variant: "destructive",
+      });
+    }
   };
 
   const resetStoreForm = () => {
@@ -290,8 +383,7 @@ const StoreManagement = () => {
       pancard: "",
       state: "",
       gstnumber: "",
-      storeadminname: "",
-      storeadminemail: "",
+      storeemail: "",
       whatsapp: "",
     });
   };
@@ -370,10 +462,12 @@ const StoreManagement = () => {
               <Mail className="w-3 h-3" />
               {store.email}
             </div>
-            <div className="flex items-center gap-1">
-              <UserIcon className="w-3 h-3" />
-              Manager: {store.manager}
-            </div>
+            {store.manager && (
+              <div className="flex items-center gap-1">
+                <UserIcon className="w-3 h-3" />
+                Manager: {store.manager}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -382,7 +476,7 @@ const StoreManagement = () => {
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button
+            {/* <Button
               size="sm"
               variant="outline"
               className="flex-1"
@@ -393,7 +487,7 @@ const StoreManagement = () => {
             >
               <Eye className="w-3 h-3 mr-1" />
               View Details
-            </Button>
+            </Button> */}
             <PermissionWrapper permission="manage_store">
               <Button
                 size="sm"
@@ -406,15 +500,14 @@ const StoreManagement = () => {
                     address: store.address || "",
                     googlemaplink: store.googlemaplink || "",
                     city: store.city,
-                    latitude: 0,
-                    longitude: 0,
+                    latitude: store.latitude ?? undefined,
+                    longitude: store.longitude ?? undefined,
                     phone: store.phone || "",
-                    pancard: "",
+                    pancard: store.pancard ?? undefined,
                     state: store.state,
-                    gstnumber: "",
-                    storeadminname: store.manager || "",
-                    storeadminemail: "",
-                    whatsapp: "",
+                    gstnumber: store.gstnumber ?? undefined,
+                    storeemail: store.email || "",
+                    whatsapp: store.whatsapp || "",
                   });
                   setEditStoreOpen(true);
                 }}
@@ -502,10 +595,12 @@ const StoreManagement = () => {
                             <Mail className="w-4 h-4 text-muted-foreground" />
                             <span>{selectedStore.email}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <UserIcon className="w-4 h-4 text-muted-foreground" />
-                            <span>Manager: {selectedStore.manager}</span>
-                          </div>
+                          {selectedStore.manager && (
+                            <div className="flex items-center gap-2">
+                              <UserIcon className="w-4 h-4 text-muted-foreground" />
+                              <span>Manager: {selectedStore.manager}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </TabsContent>
@@ -531,24 +626,24 @@ const StoreManagement = () => {
                         {storeUsers.filter(
                           (u) => u.storeId === selectedStore.id
                         ).length === 0 && (
-                          <div className="text-center py-8">
-                            <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                            <p className="text-sm text-muted-foreground mb-2">
-                              No sales executives assigned to this store
-                            </p>
-                            <p className="text-xs text-muted-foreground mb-4">
-                              Use User Management to add team members
-                            </p>
-                            <Button
-                              size="sm"
-                              onClick={() => (window.location.hash = "#users")}
-                              variant="outline"
-                            >
-                              <Users className="w-3 h-3 mr-1" />
-                              Go to User Management
-                            </Button>
-                          </div>
-                        )}
+                            <div className="text-center py-8">
+                              <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                              <p className="text-sm text-muted-foreground mb-2">
+                                No sales executives assigned to this store
+                              </p>
+                              <p className="text-xs text-muted-foreground mb-4">
+                                Use User Management to add team members
+                              </p>
+                              <Button
+                                size="sm"
+                                onClick={() => (window.location.hash = "#users")}
+                                variant="outline"
+                              >
+                                <Users className="w-3 h-3 mr-1" />
+                                Go to User Management
+                              </Button>
+                            </div>
+                          )}
                       </div>
                     </TabsContent>
 
@@ -687,15 +782,17 @@ const StoreManagement = () => {
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <UserIcon className="w-5 h-5 text-muted-foreground" />
-                          <div>
-                            <p className="font-medium">Store Manager</p>
-                            <p className="text-sm text-muted-foreground">
-                              {selectedStore.manager}
-                            </p>
+                        {selectedStore.manager && (
+                          <div className="flex items-center gap-3">
+                            <UserIcon className="w-5 h-5 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium">Store Manager</p>
+                              <p className="text-sm text-muted-foreground">
+                                {selectedStore.manager}
+                              </p>
+                            </div>
                           </div>
-                        </div>
+                        )}
                         <div className="flex items-center gap-3">
                           <Calendar className="w-5 h-5 text-muted-foreground" />
                           <div>
@@ -729,23 +826,23 @@ const StoreManagement = () => {
                       ))}
                     {storeUsers.filter((u) => u.storeId === selectedStore.id)
                       .length === 0 && (
-                      <div className="col-span-2 text-center py-8">
-                        <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                        <h4 className="font-semibold mb-2">
-                          No Team Members Yet
-                        </h4>
-                        <p className="text-muted-foreground mb-4">
-                          Use User Management to add sales executives to this
-                          store
-                        </p>
-                        <Button
-                          onClick={() => (window.location.hash = "#users")}
-                        >
-                          <Users className="w-4 h-4 mr-2" />
-                          Go to User Management
-                        </Button>
-                      </div>
-                    )}
+                        <div className="col-span-2 text-center py-8">
+                          <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                          <h4 className="font-semibold mb-2">
+                            No Team Members Yet
+                          </h4>
+                          <p className="text-muted-foreground mb-4">
+                            Use User Management to add sales executives to this
+                            store
+                          </p>
+                          <Button
+                            onClick={() => (window.location.hash = "#users")}
+                          >
+                            <Users className="w-4 h-4 mr-2" />
+                            Go to User Management
+                          </Button>
+                        </div>
+                      )}
                   </div>
                 </TabsContent>
 
@@ -897,75 +994,66 @@ const StoreManagement = () => {
         </div>
       )}
 
-      {/* Store Details Dialog */}
-      <StoreDetailsDialog />
-
-      {/* Add Store & Admin Dialog */}
+      {/* Add Store Dialog */}
       <Dialog open={addStoreOpen} onOpenChange={setAddStoreOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create Store & Assign Admin</DialogTitle>
+            <DialogTitle>Create Store</DialogTitle>
             <DialogDescription>
-              Create a new store location and assign a Store Admin to manage it.
+              Create a new store location with all necessary details.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
             <div className="space-y-4">
               <h3 className="font-semibold text-lg">Store Information</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="storename">Store Name*</Label>
-                  <Input
-                    id="storename"
-                    type="text"
-                    value={storeFormData.storename}
-                    onChange={(e) =>
-                      setStoreFormData((prev) => ({
-                        ...prev,
-                        storename: e.target.value,
-                      }))
-                    }
-                    placeholder="Store Name"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="state">State*</Label>
-                  <Input
-                    id="state"
-                    value={storeFormData.state}
-                    onChange={(e) =>
-                      setStoreFormData((prev) => ({
-                        ...prev,
-                        state: e.target.value,
-                      }))
-                    }
-                    placeholder="Maharashtra"
-                    required
-                  />
-                </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="storename">
+                  Store Name
+                  <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <Input
+                  id="storename"
+                  type="text"
+                  value={storeFormData.storename}
+                  onChange={(e) =>
+                    setStoreFormData((prev) => ({
+                      ...prev,
+                      storename: e.target.value,
+                    }))
+                  }
+                  placeholder="Store Name"
+                  required
+                />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="city">City*</Label>
-                  <Input
-                    id="city"
-                    type="text"
-                    value={storeFormData.city}
-                    onChange={(e) =>
-                      setStoreFormData((prev) => ({
-                        ...prev,
-                        city: e.target.value,
-                      }))
-                    }
-                    placeholder="Mumbai"
-                    required
-                  />
-                </div>
+              {/* State City Selector */}
+              <StateCitySelector
+                selectedState={storeFormData.state}
+                selectedCity={storeFormData.city}
+                onStateChange={(stateName) =>
+                  setStoreFormData((prev) => ({
+                    ...prev,
+                    state: stateName
+                  }))
+                }
+                onCityChange={(cityName) =>
+                  setStoreFormData((prev) => ({
+                    ...prev,
+                    city: cityName
+                  }))
+                }
+                stateLabel="State"
+                cityLabel="City"
+                required
+              />
 
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone (India)*</Label>
+                  <Label htmlFor="phone">
+                    Phone (India)
+                    <span className="text-red-500 ml-1">*</span>
+                  </Label>
                   <div className="flex">
                     <span className="inline-flex items-center px-3 rounded-l-md border border-input bg-muted text-sm text-muted-foreground">
                       +91
@@ -990,7 +1078,10 @@ const StoreManagement = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="whatsapp">Whatsapp Number (India)*</Label>
+                  <Label htmlFor="whatsapp">
+                    Whatsapp Number (India)
+                    <span className="text-red-500 ml-1">*</span>
+                  </Label>
                   <div className="flex">
                     <span className="inline-flex items-center px-3 rounded-l-md border border-input bg-muted text-sm text-muted-foreground">
                       +91
@@ -1019,7 +1110,10 @@ const StoreManagement = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="address">Address*</Label>
+                <Label htmlFor="address">
+                  Address
+                  <span className="text-red-500 ml-1">*</span>
+                </Label>
                 <Input
                   id="address"
                   value={storeFormData.address}
@@ -1033,6 +1127,7 @@ const StoreManagement = () => {
                   required
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="googlemaplink">Google Map Link</Label>
                 <Input
@@ -1052,7 +1147,9 @@ const StoreManagement = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="latitude">Latitude*</Label>
+                  <Label htmlFor="latitude">
+                    Latitude
+                  </Label>
                   <Input
                     id="latitude"
                     type="number"
@@ -1069,11 +1166,12 @@ const StoreManagement = () => {
                       }))
                     }
                     placeholder="Enter latitude (e.g., 12.9716)"
-                    required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="longitude">Longitude*</Label>
+                  <Label htmlFor="longitude">
+                    Longitude
+                  </Label>
                   <Input
                     id="longitude"
                     type="number"
@@ -1090,101 +1188,358 @@ const StoreManagement = () => {
                       }))
                     }
                     placeholder="Enter longitude (e.g., 77.5946)"
-                    required
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="storeadminemail">Store Email*</Label>
+                <Label htmlFor="storeemail">
+                  Store Email
+                  <span className="text-red-500 ml-1">*</span>
+                </Label>
                 <Input
-                  id="storeadminemail"
+                  id="storeemail"
                   type="email"
-                  value={storeFormData.storeadminemail}
+                  value={storeFormData.storeemail}
                   onChange={(e) =>
                     setStoreFormData((prev) => ({
                       ...prev,
-                      storeadminemail: e.target.value,
+                      storeemail: e.target.value,
                     }))
                   }
                   placeholder="mumbai@bikebiz.com"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="gstnumber">GST Number*</Label>
-                <Input
-                  id="gstnumber"
-                  type="text"
-                  maxLength={15}
-                  value={storeFormData.gstnumber}
-                  onChange={(e) =>
-                    setStoreFormData((prev) => ({
-                      ...prev,
-                      gstnumber: e.target.value.toUpperCase(),
-                    }))
-                  }
-                  placeholder="Enter GST Number (e.g., 27ABCDE1234F1Z5)"
-                  pattern="^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="pancard">PAN Number*</Label>
-                <Input
-                  id="pancard"
-                  type="text"
-                  maxLength={10}
-                  value={storeFormData.pancard}
-                  onChange={(e) =>
-                    setStoreFormData((prev) => ({
-                      ...prev,
-                      pancard: e.target.value.toUpperCase(),
-                    }))
-                  }
-                  placeholder="Enter PAN Number (e.g., ABCDE1234F)"
-                  pattern="^[A-Z]{5}[0-9]{4}[A-Z]{1}$"
-                  required
-                />
-              </div>
-            </div>
 
-            <Separator />
-
-            {/* <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Store Admin Details</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="storeadminname">Admin Name *</Label>
+                  <Label htmlFor="gstnumber">
+                    GST Number
+                  </Label>
                   <Input
-                    id="storeadminname"
-                    value={storeFormData.storeadminname}
-                    onChange={(e) => setStoreFormData(prev => ({ ...prev, storeadminname: e.target.value }))}
-                    placeholder="Rajesh Patel"
+                    id="gstnumber"
+                    type="text"
+                    maxLength={15}
+                    value={storeFormData.gstnumber}
+                    onChange={(e) =>
+                      setStoreFormData((prev) => ({
+                        ...prev,
+                        gstnumber: e.target.value.toUpperCase(),
+                      }))
+                    }
+                    placeholder="Enter GST Number (e.g., 27ABCDE1234F1Z5)"
+                    pattern="^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="storeadminemail">Admin Email *</Label>
+                  <Label htmlFor="pancard">
+                    PAN Number
+                  </Label>
                   <Input
-                    id="storeadminemail"
-                    type="email"
-                    value={storeFormData.storeadminemail}
-                    onChange={(e) => setStoreFormData(prev => ({ ...prev, storeadminemail: e.target.value }))}
-                    placeholder="rajesh@bikebiz.com"
+                    id="pancard"
+                    type="text"
+                    maxLength={10}
+                    value={storeFormData.pancard}
+                    onChange={(e) =>
+                      setStoreFormData((prev) => ({
+                        ...prev,
+                        pancard: e.target.value.toUpperCase(),
+                      }))
+                    }
+                    placeholder="ABCDE1234F"
+                    pattern="^[A-Z]{5}[0-9]{4}[A-Z]{1}$"
                   />
                 </div>
               </div>
-            </div> */}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddStoreOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddStoreWithAdmin}>
+            <Button onClick={handleAddStoreWithAdmin} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               <Building className="w-4 h-4 mr-2" />
-              Create Store & Admin
+              Create Store
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Store Dialog */}
+      <Dialog open={editStoreOpen} onOpenChange={setEditStoreOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Store</DialogTitle>
+            <DialogDescription>
+              Update store information.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Same form fields as Add Store */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg">Store Information</h3>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-storename">
+                  Store Name
+                  <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <Input
+                  id="edit-storename"
+                  type="text"
+                  value={storeFormData.storename}
+                  onChange={(e) =>
+                    setStoreFormData((prev) => ({
+                      ...prev,
+                      storename: e.target.value,
+                    }))
+                  }
+                  placeholder="Store Name"
+                  required
+                />
+              </div>
+
+              {/* State City Selector */}
+              <StateCitySelector
+                selectedState={storeFormData.state}
+                selectedCity={storeFormData.city}
+                onStateChange={(stateName) =>
+                  setStoreFormData((prev) => ({
+                    ...prev,
+                    state: stateName
+                  }))
+                }
+                onCityChange={(cityName) =>
+                  setStoreFormData((prev) => ({
+                    ...prev,
+                    city: cityName
+                  }))
+                }
+                stateLabel="State"
+                cityLabel="City"
+                required
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">
+                    Phone (India)
+                    <span className="text-red-500 ml-1">*</span>
+                  </Label>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-input bg-muted text-sm text-muted-foreground">
+                      +91
+                    </span>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      inputMode="numeric"
+                      className="rounded-l-none"
+                      placeholder="9876543210"
+                      maxLength={10}
+                      value={storeFormData.phone}
+                      onChange={(e) =>
+                        setStoreFormData((prev) => ({
+                          ...prev,
+                          phone: e.target.value.replace(/\D/g, "").slice(0, 10),
+                        }))
+                      }
+                      pattern="^[6-9]\d{9}$"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="whatsapp">
+                    Whatsapp Number (India)
+                    <span className="text-red-500 ml-1">*</span>
+                  </Label>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-input bg-muted text-sm text-muted-foreground">
+                      +91
+                    </span>
+                    <Input
+                      id="whatsapp"
+                      type="tel"
+                      inputMode="numeric"
+                      className="rounded-l-none"
+                      placeholder="9876543210"
+                      maxLength={10}
+                      value={storeFormData.whatsapp}
+                      onChange={(e) =>
+                        setStoreFormData((prev) => ({
+                          ...prev,
+                          whatsapp: e.target.value
+                            .replace(/\D/g, "")
+                            .slice(0, 10),
+                        }))
+                      }
+                      pattern="^[6-9]\d{9}$"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address">
+                  Address
+                  <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <Input
+                  id="address"
+                  value={storeFormData.address}
+                  onChange={(e) =>
+                    setStoreFormData((prev) => ({
+                      ...prev,
+                      address: e.target.value,
+                    }))
+                  }
+                  placeholder="123 Dr. D.N. Road, Mumbai Central, Mumbai - 400008"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="googlemaplink">Google Map Link</Label>
+                <Input
+                  id="googlemaplink"
+                  type="url"
+                  value={storeFormData.googlemaplink}
+                  onChange={(e) =>
+                    setStoreFormData((prev) => ({
+                      ...prev,
+                      googlemaplink: e.target.value,
+                    }))
+                  }
+                  placeholder="https://maps.app.goo.gl/..."
+                  pattern="https?://(maps\.google\.com|goo\.gl|maps\.app\.goo\.gl).*"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="latitude">
+                    Latitude
+                    {/* <span className="text-red-500 ml-1">*</span> */}
+                  </Label>
+                  <Input
+                    id="latitude"
+                    type="number"
+                    min="-90"
+                    max="90"
+                    step="any"
+                    value={storeFormData.latitude}
+                    onChange={(e) =>
+                      setStoreFormData((prev) => ({
+                        ...prev,
+                        latitude: Number.isNaN(e.target.valueAsNumber)
+                          ? 0
+                          : e.target.valueAsNumber,
+                      }))
+                    }
+                    placeholder="Enter latitude (e.g., 12.9716)"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="longitude">
+                    Longitude
+                    {/* <span className="text-red-500 ml-1">*</span> */}
+                  </Label>
+                  <Input
+                    id="longitude"
+                    type="number"
+                    min="-180"
+                    max="180"
+                    step="any"
+                    value={storeFormData.longitude}
+                    onChange={(e) =>
+                      setStoreFormData((prev) => ({
+                        ...prev,
+                        longitude: Number.isNaN(e.target.valueAsNumber)
+                          ? 0
+                          : e.target.valueAsNumber,
+                      }))
+                    }
+                    placeholder="Enter longitude (e.g., 77.5946)"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="storeemail">
+                  Store Email
+                  <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <Input
+                  id="storeemail"
+                  type="email"
+                  value={storeFormData.storeemail}
+                  onChange={(e) =>
+                    setStoreFormData((prev) => ({
+                      ...prev,
+                      storeemail: e.target.value,
+                    }))
+                  }
+                  placeholder="mumbai@bikebiz.com"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="gstnumber">
+                    GST Number
+                    {/* <span className="text-red-500 ml-1">*</span> */}
+                  </Label>
+                  <Input
+                    id="gstnumber"
+                    type="text"
+                    maxLength={15}
+                    value={storeFormData.gstnumber}
+                    onChange={(e) =>
+                      setStoreFormData((prev) => ({
+                        ...prev,
+                        gstnumber: e.target.value.toUpperCase(),
+                      }))
+                    }
+                    placeholder="Enter GST Number (e.g., 27ABCDE1234F1Z5)"
+                    pattern="^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="pancard">
+                    PAN Number
+                    {/* <span className="text-red-500 ml-1">*</span> */}
+                  </Label>
+                  <Input
+                    id="pancard"
+                    type="text"
+                    maxLength={10}
+                    value={storeFormData.pancard}
+                    onChange={(e) =>
+                      setStoreFormData((prev) => ({
+                        ...prev,
+                        pancard: e.target.value.toUpperCase(),
+                      }))
+                    }
+                    placeholder="ABCDE1234F"
+                    pattern="^[A-Z]{5}[0-9]{4}[A-Z]{1}$"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditStoreOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditStore} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              <Edit className="w-4 h-4 mr-2" />
+              Update Store
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1272,7 +1627,8 @@ const StoreManagement = () => {
             <Button variant="outline" onClick={() => setAddUserOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddUser}>
+            <Button onClick={handleAddUser} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               <Plus className="w-4 h-4 mr-2" />
               Add Executive
             </Button>

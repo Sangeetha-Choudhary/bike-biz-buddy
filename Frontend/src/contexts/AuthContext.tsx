@@ -12,6 +12,11 @@ export interface Store {
   email?: string;
   city: string;
   state: string;
+  whatsapp?: string;
+  latitude?: number;
+  longitude?: number;
+  gstnumber?: string;
+  pancard?: string;
   manager?: string;
   createdDate: string;
   googlemaplink: string;
@@ -21,7 +26,6 @@ export interface Store {
 export interface User {
   id: string;
   email: string;
-
   name: string;
   role: UserRole;
   avatar?: string;
@@ -40,10 +44,16 @@ export interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  error: string;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   hasPermission: (permission: string) => boolean;
   hasRole: (role: UserRole | UserRole[]) => boolean;
+  refreshUserData: () => Promise<void>;
+  clearError: () => void;
+  // Helper functions
+  canManageStores: () => boolean;
+  canManageUsers: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -118,65 +128,107 @@ const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string>("");
 
+  // Check for existing session on app load
   useEffect(() => {
-    // Check if user is already logged in
-    const storedUser = localStorage.getItem('bikebiz_user');
-    const token = localStorage.getItem('bikebiz_token');
-    
-    if (storedUser && token) {
+    const initializeAuth = async () => {
+      setIsLoading(true);
       try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
+        const storedUser = localStorage.getItem('bikebiz_user');
+        const token = localStorage.getItem('bikebiz_token');
+        
+        if (storedUser && token) {
+          const parsedUser = JSON.parse(storedUser);
+          
+          // Verify token is still valid by making a simple API call
+          try {
+            apiService.setToken(token);
+            // Test token validity with health check or any endpoint that requires auth
+            await apiService.healthCheck();
+            setUser(parsedUser);
+          } catch (error) {
+            console.error('Token validation failed:', error);
+            // Clear invalid session
+            localStorage.removeItem('bikebiz_user');
+            localStorage.removeItem('bikebiz_token');
+            setUser(null);
+          }
+        }
       } catch (error) {
-        console.error('Error parsing stored user:', error);
-        localStorage.removeItem('bikebiz_user');
-        localStorage.removeItem('bikebiz_token');
+        console.error('Auth initialization error:', error);
+        setError('Failed to initialize authentication');
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
-    
+    setError("");
     try {
+      // Pass credentials as an object to match the API service
       const response = await apiService.login({ email, password });
-      // _id: user._id,
-      // username: user.username,
-      // email: user.email,
-      // role: user.role,
-      // redirectUrl: roleBasedRedirect[user.role] || "/dashboard",
-      // token: generateToken(user._id),
+      
       // Create user object with permissions based on role
       const userWithPermissions: User = {
         id: response._id,
         email: response.email,
-        
         name: response.username,
         role: response.role as UserRole,
         permissions: ROLE_PERMISSIONS[response.role as UserRole] || [],
-        avatar: '/placeholder.svg'
+        avatar: '/placeholder.svg',
+        // Add any additional fields from response if available
+        storeId: response.store?.id,
+        storeName: response.store?.name,
       };
       
       // Store token and user data
       apiService.setToken(response.token);
       setUser(userWithPermissions);
       localStorage.setItem('bikebiz_user', JSON.stringify(userWithPermissions));
-      
-      setIsLoading(false);
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      setIsLoading(false);
+      setError(error.message || 'Login failed. Please try again.');
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const logout = () => {
     setUser(null);
+    setError("");
     localStorage.removeItem('bikebiz_user');
     apiService.removeToken();
+  };
+
+  const refreshUserData = async (): Promise<void> => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true);
+      // For now, just refresh permissions from the static config
+      // Later when you have the API, you can fetch from backend
+      const updatedPermissions = ROLE_PERMISSIONS[user.role] || [];
+      
+      const updatedUser = {
+        ...user,
+        permissions: updatedPermissions
+      };
+      
+      setUser(updatedUser);
+      localStorage.setItem('bikebiz_user', JSON.stringify(updatedUser));
+    } catch (error: any) {
+      console.error('Failed to refresh user data:', error);
+      setError('Failed to refresh user permissions');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const hasPermission = (permission: string): boolean => {
@@ -193,6 +245,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return user.role === role;
   };
 
+  const clearError = () => {
+    setError("");
+  };
+
   // Helper function to check if user can manage stores
   const canManageStores = (): boolean => {
     return hasPermission('all') || hasPermission('manage_store');
@@ -200,17 +256,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Helper function to check if user can manage users
   const canManageUsers = (): boolean => {
-    return hasPermission('all') || hasPermission('manage_store_users');
+    return hasPermission('all') || hasPermission('manage_store_users') || hasPermission('create_procurement_users') || hasPermission('manage_procurement_users');
   };
 
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
     isLoading,
+    error,
     login,
     logout,
     hasPermission,
-    hasRole
+    hasRole,
+    refreshUserData,
+    clearError,
+    canManageStores,
+    canManageUsers
   };
 
   return (

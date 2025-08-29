@@ -30,11 +30,13 @@ const StoreSchema = new mongoose.Schema(
     },
     latitude: {
       type: Number,
-      required: [true, 'Latitude is required'],
+      // required: [true, 'Latitude is required'],
+      required: false,
     },
     longitude: {
       type: Number,
-      required: [true, 'Longitude is required'],
+      // required: [true, 'Longitude is required'],
+      required: false,
     },
     phone: {
       type: String,
@@ -55,13 +57,15 @@ const StoreSchema = new mongoose.Schema(
     },
     pancard: {
       type: String,
-      required: [true, 'Pancard number is required'],
+      // required: [true, 'Pancard number is required'],
+      required: false,
       unique: true,
       trim: true,
     },
     gstnumber: {
       type: String,
-      required: [true, 'GST number is required'],
+      // required: [true, 'GST number is required'],
+      required: false,
       unique: true,
       trim: true,
     },
@@ -74,9 +78,7 @@ const StoreSchema = new mongoose.Schema(
     storeAdmin: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-    //   required: [true, 'Store must have an admin'],
-      unique: true,
-      required: false,
+      // Removed 'sparse: true' to ensure no unique constraint
     },
   },
   { timestamps: true },

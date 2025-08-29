@@ -1,139 +1,163 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
-export interface LoginRequest {
-  email: string;
-  password: string;
+interface ApiResponse<T> {
+  data?: T;
+  message?: string;
+  error?: string;
 }
 
-export interface LoginResponse {
-  _id: string;
-  username: string;
-  email: string;
-  role: string;
-  redirectUrl: string;
-  token: string;
+interface StoreData {
+  storename: string;
+  address: string;
+  googlemaplink: string;
+  city: string;
+  latitude?: number;
+  longitude?: number;
+  phone: string;
+  pancard?: string;
+  state: string;
+  gstnumber?: string;
+  storeemail: string;
+  whatsapp: string;
 }
 
-export interface CreateUserRequest {
-  username: string;
+interface UserData {
+  name: string;
   email: string;
-  password: string;
-  role: string;
-  store?: string;
-}
-
-export interface CreateUserResponse {
-  _id: string;
-  username: string;
-  email: string;
-  role: string;
-  store?: string;
-  permissions?: string[];
-  token: string;
+  department: string;
+  phone?: string;
+  storeId?: string;
 }
 
 class ApiService {
-  private baseURL: string;
+  // Add token management methods
+  private token: string | null = null;
 
-  constructor(baseURL: string = API_BASE_URL) {
-    this.baseURL = baseURL;
-  }
-
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
-    
-    const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    };
-
-    // Add auth token if available
-    const token = localStorage.getItem('bikebiz_token');
-    if (token) {
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${token}`,
-      };
-    }
-
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Network error occurred');
-    }
-  }
-
-  // Health check endpoint
-  async healthCheck(): Promise<{ status: string; message: string }> {
-    try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const response = await fetch(`${baseUrl}/`);
-      if (response.ok) {
-        return { status: 'ok', message: 'API is running' };
-      } else {
-        return { status: 'error', message: 'API is not responding' };
-      }
-    } catch (error) {
-      return { status: 'error', message: 'Cannot connect to API' };
-    }
-  }
-
-  // Auth endpoints
-  async login(credentials: LoginRequest): Promise<LoginResponse> {
-    return this.request<LoginResponse>('/api/users/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    });
-  }
-
-  async createUser(userData: CreateUserRequest): Promise<CreateUserResponse> {
-    return this.request<CreateUserResponse>('/api/users/createUser', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    });
-  }
-
-  async getUsers(): Promise<any[]> {
-    return this.request<any[]>('/api/users', {
-      method: 'GET',
-    });
-  }
-
-  // Helper method to get auth token
-  getToken(): string | null {
-    return localStorage.getItem('bikebiz_token');
-  }
-
-  // Helper method to set auth token
   setToken(token: string): void {
+    this.token = token;
     localStorage.setItem('bikebiz_token', token);
   }
 
-  // Helper method to remove auth token
   removeToken(): void {
+    this.token = null;
     localStorage.removeItem('bikebiz_token');
   }
 
-  // Helper method to check if user is authenticated
-  isAuthenticated(): boolean {
-    return !!this.getToken();
+  private getAuthHeaders(): HeadersInit {
+    const token = this.token || localStorage.getItem('bikebiz_token');
+    return {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+    };
+  }
+
+  private async handleResponse<T>(response: Response): Promise<T> {
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  // Auth methods
+  async login(credentials: { email: string; password: string }): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/users/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials),
+    });
+    return this.handleResponse(response);
+  }
+
+  // Store methods
+  async getStores(): Promise<any[]> {
+    const response = await fetch(`${API_BASE_URL}/api/stores/getstores`, {
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async getStoreById(id: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/stores/${id}`, {
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async createStore(storeData: StoreData): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/stores/createstore`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(storeData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updateStore(id: string, storeData: Partial<StoreData>): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/stores/${id}`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(storeData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async deleteStore(id: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/stores/${id}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async getStoreUsers(storeId: string): Promise<any[]> {
+    const response = await fetch(`${API_BASE_URL}/api/stores/${storeId}/users`, {
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  // User methods
+  async getUsers(): Promise<any[]> {
+    const response = await fetch(`${API_BASE_URL}/api/users`, {
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async createUser(userData: UserData): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/users`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(userData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updateUser(id: string, userData: Partial<UserData>): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/users/${id}`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(userData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async deleteUser(id: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/users/${id}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async healthCheck(): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/health`, {
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse(response);
   }
 }
 
 export const apiService = new ApiService();
+export default apiService;
