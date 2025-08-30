@@ -30,7 +30,7 @@ import {
   CheckSquare,
   Lock
 } from "lucide-react";
-import WheelservLogo from "../../public/assets/Wheelserv.png";
+import WheelservLogo from "/assets/Wheelserv.png";
 
 interface NavigationProps {
   currentPage: string;

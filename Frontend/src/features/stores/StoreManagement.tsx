@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth, Store, User } from "@/contexts/AuthContext";
-import PermissionWrapper from "@/components/PermissionWrapper";
+import PermissionWrapper from "@/components/common/PermissionWrapper";
 import {
   Search,
   Filter,

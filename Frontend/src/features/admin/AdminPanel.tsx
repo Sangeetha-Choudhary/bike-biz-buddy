@@ -14,7 +14,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { useAuth, UserRole } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { UserRole } from "@/types/auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { 

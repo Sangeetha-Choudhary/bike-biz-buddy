@@ -104,18 +104,20 @@ export const usePermissionCheck = () => {
 
 // Component for showing different content based on user role
 interface RoleBasedContentProps {
-  admin?: React.ReactNode;
-  manager?: React.ReactNode;
-  sales?: React.ReactNode;
-  viewer?: React.ReactNode;
+  global_admin?: React.ReactNode;
+  store_admin?: React.ReactNode;
+  sales_executive?: React.ReactNode;
+  procurement_admin?: React.ReactNode;
+  procurement_executive?: React.ReactNode;
   fallback?: React.ReactNode;
 }
 
 export const RoleBasedContent: React.FC<RoleBasedContentProps> = ({
-  admin,
-  manager,
-  sales,
-  viewer,
+  global_admin,
+  store_admin,
+  sales_executive,
+  procurement_admin,
+  procurement_executive,
   fallback
 }) => {
   const { user } = useAuth();
@@ -123,14 +125,16 @@ export const RoleBasedContent: React.FC<RoleBasedContentProps> = ({
   if (!user) return fallback || null;
 
   switch (user.role) {
-    case 'admin':
-      return <>{admin}</> || fallback || null;
-    case 'manager':
-      return <>{manager}</> || fallback || null;
-    case 'sales':
-      return <>{sales}</> || fallback || null;
-    case 'viewer':
-      return <>{viewer}</> || fallback || null;
+    case 'global_admin':
+      return <>{global_admin}</> || fallback || null;
+    case 'store_admin':
+      return <>{store_admin}</> || fallback || null;
+    case 'sales_executive':
+      return <>{sales_executive}</> || fallback || null;
+    case 'procurement_admin':
+      return <>{procurement_admin}</> || fallback || null;
+    case 'procurement_executive':
+      return <>{procurement_executive}</> || fallback || null;
     default:
       return fallback || null;
   }

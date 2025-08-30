@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import PermissionWrapper, { RoleBasedContent, SensitiveData } from "@/components/PermissionWrapper";
+import PermissionWrapper, { RoleBasedContent, SensitiveData } from "@/components/common/PermissionWrapper";
 import { 
   Shield, 
   Users, 

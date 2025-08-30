@@ -17,7 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
-import PermissionWrapper from "@/components/PermissionWrapper";
+import PermissionWrapper from "@/components/common/PermissionWrapper";
 import { 
   Search, 
   Filter, 
