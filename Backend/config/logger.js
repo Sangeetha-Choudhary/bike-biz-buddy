@@ -144,4 +144,35 @@ logger.logBusinessEvent = (event, userId, additionalInfo = {}) => {
   });
 };
 
+// Additional logging methods for the new architecture
+logger.logValidationError = (error, req, additionalInfo = {}) => {
+  logger.warn('Validation Error', {
+    message: error.message,
+    fieldErrors: error.fieldErrors,
+    method: req?.method,
+    url: req?.originalUrl,
+    ip: req?.ip,
+    userId: req?.user?.id,
+    ...additionalInfo,
+  });
+};
+
+logger.logAuthenticationEvent = (event, userId, ip, additionalInfo = {}) => {
+  logger.info('Authentication Event', {
+    event,
+    userId,
+    ip,
+    ...additionalInfo,
+  });
+};
+
+logger.logAuthorizationEvent = (event, userId, ip, additionalInfo = {}) => {
+  logger.info('Authorization Event', {
+    event,
+    userId,
+    ip,
+    ...additionalInfo,
+  });
+};
+
 export default logger;

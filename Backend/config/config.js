@@ -28,12 +28,6 @@ const envSchema = Joi.object({
 
   // Security Configuration
   BCRYPT_SALT_ROUNDS: Joi.number().integer().min(10).max(15).default(12),
-  RATE_LIMIT_WINDOW_MS: Joi.number().integer().min(60000).default(900000),
-  RATE_LIMIT_MAX_REQUESTS: Joi.number()
-    .integer()
-    .min(10)
-    .max(1000)
-    .default(100),
 
   // Logging Configuration
   LOG_LEVEL: Joi.string()
@@ -95,10 +89,6 @@ const config = {
   // Security Configuration
   security: {
     bcryptSaltRounds: envVars.BCRYPT_SALT_ROUNDS,
-    rateLimit: {
-      windowMs: envVars.RATE_LIMIT_WINDOW_MS,
-      max: envVars.RATE_LIMIT_MAX_REQUESTS,
-    },
   },
 
   // Logging Configuration

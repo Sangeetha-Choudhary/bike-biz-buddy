@@ -1,70 +1,11 @@
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
 import hpp from 'hpp';
+import xss from 'xss-clean';
 import config from '../config/config.js';
 import logger from '../config/logger.js';
 
-// Rate limiting middleware
-export const rateLimiter = rateLimit({
-  windowMs: config.security.rateLimit.windowMs,
-  max: config.security.rateLimit.max,
-  message: {
-    success: false,
-    error: {
-      message: 'Too many requests from this IP, please try again later.',
-      code: 'RATE_LIMIT_EXCEEDED',
-    },
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res) => {
-    logger.logSecurityEvent('Rate limit exceeded', req.user?.id, req.ip, {
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-    });
-    res.status(429).json({
-      success: false,
-      error: {
-        message: 'Too many requests from this IP, please try again later.',
-        code: 'RATE_LIMIT_EXCEEDED',
-        retryAfter: Math.ceil(config.security.rateLimit.windowMs / 1000),
-      },
-    });
-  },
-});
-
-// Stricter rate limiting for authentication endpoints
-export const authRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 requests per window
-  message: {
-    success: false,
-    error: {
-      message: 'Too many authentication attempts, please try again later.',
-      code: 'AUTH_RATE_LIMIT_EXCEEDED',
-    },
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res) => {
-    logger.logSecurityEvent('Authentication rate limit exceeded', null, req.ip, {
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-      endpoint: req.originalUrl,
-    });
-    res.status(429).json({
-      success: false,
-      error: {
-        message: 'Too many authentication attempts, please try again later.',
-        code: 'AUTH_RATE_LIMIT_EXCEEDED',
-        retryAfter: 900, // 15 minutes
-      },
-    });
-  },
-});
-
-// Helmet configuration for security headers
+// Enhanced Helmet configuration for security headers
 export const helmetConfig = helmet({
   contentSecurityPolicy: {
     directives: {
@@ -77,24 +18,50 @@ export const helmetConfig = helmet({
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
       frameSrc: ["'none'"],
+      upgradeInsecureRequests: [],
     },
   },
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: 'cross-origin' },
+  dnsPrefetchControl: { allow: false },
+  frameguard: { action: 'deny' },
+  hidePoweredBy: true,
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+  ieNoOpen: true,
+  noSniff: true,
+  permittedCrossDomainPolicies: { permittedPolicies: 'none' },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  xssFilter: true,
 });
 
-// MongoDB query sanitization
+// XSS protection middleware
+export const xssProtection = xss();
+
+// Enhanced MongoDB query sanitization
 export const mongoSanitizeConfig = mongoSanitize({
   onSanitize: ({ req, key }) => {
-    logger.logSecurityEvent('MongoDB injection attempt blocked', req.user?.id, req.ip, {
-      key,
-      value: req.body[key],
-      userAgent: req.get('User-Agent'),
-    });
+    logger.logSecurityEvent(
+      'MongoDB injection attempt blocked',
+      req.user?.id,
+      req.ip,
+      {
+        key,
+        value: req.body[key],
+        userAgent: req.get('User-Agent'),
+        endpoint: req.originalUrl,
+        method: req.method,
+      }
+    );
   },
+  dryRun: false,
+  replaceWith: '_',
 });
 
-// Parameter pollution protection
+// Enhanced parameter pollution protection
 export const hppConfig = hpp({
   whitelist: [
     'filter',
@@ -103,15 +70,21 @@ export const hppConfig = hpp({
     'limit',
     'fields',
     'populate',
+    'select',
+    'search',
+    'category',
+    'status',
   ],
 });
 
-// CORS configuration
+// Enhanced CORS configuration
 export const corsConfig = {
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {return callback(null, true);}
-    
+    if (!origin) {
+      return callback(null, true);
+    }
+
     if (config.cors.origin.includes(origin)) {
       callback(null, true);
     } else {
@@ -131,38 +104,54 @@ export const corsConfig = {
     'Accept',
     'Authorization',
     'X-Request-ID',
+    'X-API-Key',
   ],
   exposedHeaders: ['X-Request-ID'],
   maxAge: 86400, // 24 hours
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
 };
 
-// Additional security headers
+// Enhanced security headers
 export const securityHeaders = (req, res, next) => {
   // Remove X-Powered-By header
   res.removeHeader('X-Powered-By');
-  
-  // Add security headers
+
+  // Add enhanced security headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-  
+  res.setHeader(
+    'Permissions-Policy',
+    'geolocation=(), microphone=(), camera=(), payment=()'
+  );
+  res.setHeader('X-DNS-Prefetch-Control', 'off');
+  res.setHeader('X-Download-Options', 'noopen');
+  res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+
   next();
 };
 
-// Request size limiting
+// Enhanced request size limiting
 export const requestSizeLimit = (req, res, next) => {
   const contentLength = parseInt(req.headers['content-length'] || '0');
   const maxSize = 10 * 1024 * 1024; // 10MB
-  
+
   if (contentLength > maxSize) {
-    logger.logSecurityEvent('Request size limit exceeded', req.user?.id, req.ip, {
-      contentLength,
-      maxSize,
-      userAgent: req.get('User-Agent'),
-    });
-    
+    logger.logSecurityEvent(
+      'Request size limit exceeded',
+      req.user?.id,
+      req.ip,
+      {
+        contentLength,
+        maxSize,
+        userAgent: req.get('User-Agent'),
+        endpoint: req.originalUrl,
+        method: req.method,
+      }
+    );
+
     return res.status(413).json({
       success: false,
       error: {
@@ -172,18 +161,47 @@ export const requestSizeLimit = (req, res, next) => {
       },
     });
   }
-  
+
   next();
 };
 
-// IP address extraction middleware
-export const extractIP = (req, res, next) => {
-  req.ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-           req.headers['x-real-ip'] ||
-           req.connection?.remoteAddress ||
-           req.socket?.remoteAddress ||
-           req.ip ||
-           'unknown';
-  
+// Security monitoring middleware
+export const securityMonitoring = (req, res, next) => {
+  // Log suspicious requests
+  const suspiciousPatterns = [
+    /<script/i,
+    /javascript:/i,
+    /vbscript:/i,
+    /onload/i,
+    /onerror/i,
+    /eval\(/i,
+    /document\./i,
+    /window\./i,
+  ];
+
+  const body = JSON.stringify(req.body);
+  const query = JSON.stringify(req.query);
+  const params = JSON.stringify(req.params);
+
+  for (const pattern of suspiciousPatterns) {
+    if (pattern.test(body) || pattern.test(query) || pattern.test(params)) {
+      logger.logSecurityEvent(
+        'Suspicious request detected',
+        req.user?.id,
+        req.ip,
+        {
+          pattern: pattern.source,
+          body: body.substring(0, 200),
+          query: query.substring(0, 200),
+          params: params.substring(0, 200),
+          userAgent: req.get('User-Agent'),
+          endpoint: req.originalUrl,
+          method: req.method,
+        }
+      );
+      break;
+    }
+  }
+
   next();
 };
