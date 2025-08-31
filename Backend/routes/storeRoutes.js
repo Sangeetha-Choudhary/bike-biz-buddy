@@ -6,7 +6,7 @@ import {
   softDeleteStore, 
   restoreStore,
   updateStore,
-  getStoreById 
+  getStoreById, 
 } from '../controllers/storeController.js';
 import { validateCreateStore, validateUpdateStore, handleValidation } from '../middleware/validator/validator.js';
 

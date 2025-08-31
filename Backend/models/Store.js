@@ -51,7 +51,7 @@ const StoreSchema = new mongoose.Schema(
     },
     storeemail: {
       type: String,
-      required: [true, "Store email is required"],
+      required: [true, 'Store email is required'],
       unique: true,
       trim: true,
       lowercase: true,
@@ -96,7 +96,7 @@ const StoreSchema = new mongoose.Schema(
     storeAdmin: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-    //   required: [true, 'Store must have an admin'],
+      //   required: [true, 'Store must have an admin'],
       // unique: true,
       required: false,
     },
@@ -122,9 +122,9 @@ StoreSchema.statics.softDelete = async function (id, userId) {
       isDeleted: true,
       deletedAt: new Date(),
       deletedBy: userId,
-      status: 'inactive'
+      status: 'inactive',
     },
-    { new: true }
+    { new: true },
   );
 };
 
@@ -136,9 +136,9 @@ StoreSchema.statics.restore = async function (id) {
       isDeleted: false,
       deletedAt: null,
       deletedBy: null,
-      status: 'active'
+      status: 'active',
     },
-    { new: true }
+    { new: true },
   );
 };
 

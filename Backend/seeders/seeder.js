@@ -13,99 +13,99 @@ const demoAccounts = [
     email: 'admin@bikebiz.com',
     password: 'admin123',
     role: 'global_admin',
-    store: null
+    store: null,
   },
   {
     username: 'Rajesh Patel',
     email: 'store@mumbai.com',
     password: 'store123',
     role: 'store_admin',
-    store: 'Mumbai Central Store'
+    store: 'Mumbai Central Store',
   },
   {
     username: 'Amit Sharma',
     email: 'store@delhi.com',
     password: 'store123',
     role: 'store_admin',
-    store: 'Delhi Karol Bagh Store'
+    store: 'Delhi Karol Bagh Store',
   },
   {
     username: 'Karthik Reddy',
     email: 'store@bangalore.com',
     password: 'store123',
     role: 'store_admin',
-    store: 'Bangalore Koramangala Store'
+    store: 'Bangalore Koramangala Store',
   },
   {
     username: 'Priya Sharma',
     email: 'sales1@mumbai.com',
     password: 'sales123',
     role: 'sales_executive',
-    store: 'Mumbai Central Store'
+    store: 'Mumbai Central Store',
   },
   {
     username: 'Rohit Kumar',
     email: 'sales2@mumbai.com',
     password: 'sales123',
     role: 'sales_executive',
-    store: 'Mumbai Central Store'
+    store: 'Mumbai Central Store',
   },
   {
     username: 'Neha Singh',
     email: 'sales1@delhi.com',
     password: 'sales123',
     role: 'sales_executive',
-    store: 'Delhi Karol Bagh Store'
+    store: 'Delhi Karol Bagh Store',
   },
   {
     username: 'Suresh Patil',
     email: 'admin@wakad.com',
     password: 'admin123',
     role: 'store_admin',
-    store: 'Mumbai Central Store'
+    store: 'Mumbai Central Store',
   },
   {
     username: 'Anita Kulkarni',
     email: 'executive@wakad.com',
     password: 'exec123',
     role: 'sales_executive',
-    store: 'Mumbai Central Store'
+    store: 'Mumbai Central Store',
   },
   {
     username: 'Vikram Deshmukh',
     email: 'procurement@pune.com',
     password: 'proc123',
     role: 'procurement_admin',
-    store: null
+    store: null,
   },
   {
     username: 'Ravi Mehta',
     email: 'procurement@mumbai.com',
     password: 'proc123',
     role: 'procurement_admin',
-    store: null
+    store: null,
   },
   {
     username: 'Prashant Jadhav',
     email: 'exec1@pune-procurement.com',
     password: 'exec123',
     role: 'procurement_executive',
-    store: null
+    store: null,
   },
   {
     username: 'Sneha Bhosale',
     email: 'exec2@pune-procurement.com',
     password: 'exec123',
     role: 'procurement_executive',
-    store: null
+    store: null,
   },
   {
     username: 'Arjun Iyer',
     email: 'exec1@mumbai-procurement.com',
     password: 'exec123',
     role: 'procurement_executive',
-    store: null
-  }
+    store: null,
+  },
 ];
 
 const importData = async () => {
@@ -119,9 +119,9 @@ const importData = async () => {
         const hashedPassword = await bcrypt.hash(account.password, saltRounds);
         return {
           ...account,
-          password: hashedPassword
+          password: hashedPassword,
         };
-      })
+      }),
     );
     
     await User.insertMany(hashedAccounts);

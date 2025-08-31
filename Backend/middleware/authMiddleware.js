@@ -9,7 +9,7 @@ export const protect = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith('Bearer ')) {
-    console.log("my token is: ",authHeader);
+    console.log('my token is: ',authHeader);
     return res.status(401).json({ message: 'Not authorized, no token' });
   }
 
@@ -91,12 +91,12 @@ export const checkPermission = (permission) => {
       const allowed = await rbac.can(role, permission);
 
       if (!allowed) {
-        return res.status(403).json({ message: "Forbidden: insufficient permissions" });
+        return res.status(403).json({ message: 'Forbidden: insufficient permissions' });
       }
 
       next();
     } catch (error) {
-      return res.status(500).json({ message: "Error checking permissions", error: error.message });
+      return res.status(500).json({ message: 'Error checking permissions', error: error.message });
     }
   };
 };

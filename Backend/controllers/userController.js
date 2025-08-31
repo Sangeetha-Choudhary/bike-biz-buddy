@@ -11,21 +11,21 @@ export const loginUser = async (req, res) => {
 
     if (!user) {
       
-      return res.status(400).json({ message: "Invalid email or password" });
+      return res.status(400).json({ message: 'Invalid email or password' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid email or password" });
+      return res.status(400).json({ message: 'Invalid email or password' });
     }
 
     // Role → dashboard mapping
     const roleBasedRedirect = {
-      global_admin: "/dashboard/admin",
-      store_admin: "/dashboard/storeadmin",
-      procurement_admin: "/dashboard/procurementadmin",
-      sales_executive: "/dashboard/salesexecutive",
-      procurement_executive: "/dashboard/procurementexecutive",
+      global_admin: '/dashboard/admin',
+      store_admin: '/dashboard/storeadmin',
+      procurement_admin: '/dashboard/procurementadmin',
+      sales_executive: '/dashboard/salesexecutive',
+      procurement_executive: '/dashboard/procurementexecutive',
     };
 
     res.status(200).json({
@@ -33,7 +33,7 @@ export const loginUser = async (req, res) => {
       username: user.username,
       email: user.email,
       role: user.role,
-      redirectUrl: roleBasedRedirect[user.role] || "/dashboard",
+      redirectUrl: roleBasedRedirect[user.role] || '/dashboard',
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -105,11 +105,11 @@ export const updateUser = async (req, res) => {
     }
 
     // Update user fields
-    if (username) user.username = username;
-    if (email) user.email = email;
-    if (role) user.role = role;
-    if (store !== undefined) user.store = store;
-    if (phone) user.phone = phone;
+    if (username) {user.username = username;}
+    if (email) {user.email = email;}
+    if (role) {user.role = role;}
+    if (store !== undefined) {user.store = store;}
+    if (phone) {user.phone = phone;}
     
     // Only update password if provided
     if (password) {
