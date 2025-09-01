@@ -70,7 +70,7 @@ class ApiService {
 
   // Auth methods
   async login(credentials: { email: string; password: string }): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/api/users/login`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/users/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials),
@@ -80,7 +80,7 @@ class ApiService {
 
   // Store methods
   async getStores(): Promise<any[]> {
-    const url = `${API_BASE_URL}/api/stores/getstores`;
+    const url = `${API_BASE_URL}/api/v1/stores/getstores`;
       
     const response = await fetch(url, {
       headers: this.getAuthHeaders(),
@@ -89,14 +89,14 @@ class ApiService {
   }
 
   async getStoreById(id: string): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/api/stores/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/stores/${id}`, {
       headers: this.getAuthHeaders(),
     });
     return this.handleResponse(response);
   }
 
   async createStore(storeData: StoreData): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/api/stores/createstore`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/stores/createstore`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
       body: JSON.stringify(storeData),
@@ -105,7 +105,7 @@ class ApiService {
   }
 
   async updateStore(id: string, storeData: Partial<StoreData>): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/api/stores/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/stores/${id}`, {
       method: 'PUT',
       headers: this.getAuthHeaders(),
       body: JSON.stringify(storeData),
@@ -114,7 +114,7 @@ class ApiService {
   }
 
   async deleteStore(id: string): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/api/stores/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/stores/${id}`, {
       method: 'DELETE',
       headers: this.getAuthHeaders(),
     });
@@ -122,14 +122,14 @@ class ApiService {
   }
 
   async getStoreUsers(storeId: string): Promise<any[]> {
-    const response = await fetch(`${API_BASE_URL}/api/stores/${storeId}/users`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/stores/${storeId}/users`, {
       headers: this.getAuthHeaders(),
     });
     return this.handleResponse(response);
   }
   
   async restoreStore(id: string): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/api/stores/${id}/restore`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/stores/${id}/restore`, {
       method: 'PUT',
       headers: this.getAuthHeaders(),
     });
@@ -138,14 +138,14 @@ class ApiService {
 
   // User methods
   async getUsers(): Promise<any[]> {
-    const response = await fetch(`${API_BASE_URL}/api/users/getusers`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/users/getusers`, {
       headers: this.getAuthHeaders(),
     });
     return this.handleResponse(response);
   }
 
   async createUser(userData: UserData): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/api/users/createuser`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/users/createuser`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
       body: JSON.stringify(userData),
@@ -154,7 +154,7 @@ class ApiService {
   }
 
   async updateUser(id: string, userData: Partial<UserData>): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/api/users/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/users/${id}`, {
       method: 'PUT',
       headers: this.getAuthHeaders(),
       body: JSON.stringify(userData),
@@ -163,7 +163,7 @@ class ApiService {
   }
 
   async deleteUser(id: string): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/api/users/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/users/${id}`, {
       method: 'DELETE',
       headers: this.getAuthHeaders(),
     });
@@ -171,7 +171,7 @@ class ApiService {
   }
 
   async healthCheck(): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/api/health`, {
+    const response = await fetch(`${API_BASE_URL}/health`, {
       headers: this.getAuthHeaders(),
     });
     return this.handleResponse(response);
